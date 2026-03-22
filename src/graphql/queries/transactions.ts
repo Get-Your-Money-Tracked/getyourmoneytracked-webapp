@@ -135,7 +135,12 @@ export async function fetchTransactions(filter?: TransactionFilter): Promise<Tra
 }
 
 export async function callCreateTransaction(input: CreateTransactionInput): Promise<Transaction> {
-  const gqlInput = { ...input, amount: toMoney(input.amount) }
+  const gqlInput = {
+    ...input,
+    amount: toMoney(input.amount),
+    description: input.description ?? '',
+    notes: input.notes ?? '',
+  }
   const result = await urqlClient
     .mutation(CREATE_TRANSACTION_MUTATION, { input: gqlInput })
     .toPromise()
@@ -152,7 +157,13 @@ export async function callUpdateTransaction(
   id: string,
   input: UpdateTransactionInput,
 ): Promise<Transaction> {
-  const gqlInput = { id, ...input, amount: toMoney(input.amount) }
+  const gqlInput = {
+    id,
+    ...input,
+    amount: toMoney(input.amount),
+    description: input.description ?? '',
+    notes: input.notes ?? '',
+  }
   const result = await urqlClient
     .mutation(UPDATE_TRANSACTION_MUTATION, { input: gqlInput })
     .toPromise()
