@@ -81,7 +81,7 @@ function validateName(): boolean {
 const isFormValid = computed(() => name.value.trim().length > 0)
 
 // ── Only 1 active account → disable archive ───────────────────
-const canArchive = computed(() => accountsStore.activeAccounts.length > 1)
+const canArchive = computed(() => accountsStore.accounts.length > 1)
 
 // ── Swipe-to-dismiss ──────────────────────────────────────────
 let touchStartY = 0

@@ -37,7 +37,7 @@ const accounts: Account[] = [
     balance: 100,
     icon: null,
     isDefault: true,
-    isArchived: false,
+    includeInTotal: true,
   },
 ]
 

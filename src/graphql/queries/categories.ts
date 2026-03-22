@@ -34,8 +34,8 @@ const CREATE_CATEGORY_MUTATION = `
 `
 
 const UPDATE_CATEGORY_MUTATION = `
-  mutation UpdateCategory($id: ID!, $input: UpdateCategoryInput!) {
-    updateCategory(id: $id, input: $input) {
+  mutation UpdateCategory($input: UpdateCategoryInput!) {
+    updateCategory(input: $input) {
       id
       name
       icon
@@ -49,13 +49,23 @@ const UPDATE_CATEGORY_MUTATION = `
 
 const DELETE_CATEGORY_MUTATION = `
   mutation DeleteCategory($id: ID!) {
-    deleteCategory(id: $id)
+    deleteCategory(id: $id) {
+      id
+    }
   }
 `
 
 const REORDER_CATEGORIES_MUTATION = `
-  mutation ReorderCategories($ids: [ID!]!) {
-    reorderCategories(ids: $ids)
+  mutation ReorderCategories($input: ReorderCategoriesInput!) {
+    reorderCategories(input: $input) {
+      id
+      name
+      icon
+      color
+      parentId
+      isDefault
+      sortOrder
+    }
   }
 `
 
@@ -97,7 +107,7 @@ export interface UpdateCategoryInput {
 
 export async function callUpdateCategory(id: string, input: UpdateCategoryInput): Promise<Category> {
   const result = await urqlClient
-    .mutation(UPDATE_CATEGORY_MUTATION, { id, input })
+    .mutation(UPDATE_CATEGORY_MUTATION, { input: { id, ...input } })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to update category.')
@@ -119,7 +129,7 @@ export async function callDeleteCategory(id: string): Promise<void> {
 
 export async function callReorderCategories(ids: string[]): Promise<void> {
   const result = await urqlClient
-    .mutation(REORDER_CATEGORIES_MUTATION, { ids })
+    .mutation(REORDER_CATEGORIES_MUTATION, { input: { ids } })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to reorder categories.')

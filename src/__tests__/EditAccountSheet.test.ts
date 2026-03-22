@@ -19,15 +19,15 @@ vi.mock('@/lib/urql', () => ({
 }))
 
 // ── Mutable state for accounts store mock ─────────────────────────────────────
-const _activeAccounts = ref<Account[]>([])
+const _accounts = ref<Account[]>([])
 const _updateAccount = vi.fn()
 const _archiveAccount = vi.fn()
 
 vi.mock('@/stores/accounts', () => ({
   useAccountsStore: () =>
     reactive({
-      get activeAccounts() {
-        return _activeAccounts.value
+      get accounts() {
+        return _accounts.value
       },
       updateAccount: _updateAccount,
       archiveAccount: _archiveAccount,
@@ -44,7 +44,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     balance: 5000,
     icon: null,
     isDefault: false,
-    isArchived: false,
+    includeInTotal: true,
     ...overrides,
   }
 }
@@ -62,7 +62,7 @@ describe('EditAccountSheet', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     // Default: 2 active accounts so archive is enabled
-    _activeAccounts.value = [makeAccount(), makeAccount({ id: 'acc-2', name: 'Cash' })]
+    _accounts.value = [makeAccount(), makeAccount({ id: 'acc-2', name: 'Cash' })]
   })
 
   it('renders edit sheet when open', () => {
@@ -128,7 +128,7 @@ describe('EditAccountSheet', () => {
   })
 
   it('archive button is enabled when more than 1 active account', async () => {
-    _activeAccounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
+    _accounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
     const wrapper = mountSheet()
     await flushPromises()
     const archiveBtn = wrapper.findAll('button').find((b) => b.text().includes('Archive Account'))
@@ -138,7 +138,7 @@ describe('EditAccountSheet', () => {
   })
 
   it('archive button is disabled when only 1 active account', async () => {
-    _activeAccounts.value = [makeAccount()]
+    _accounts.value = [makeAccount()]
     const wrapper = mountSheet()
     await flushPromises()
     const archiveBtn = wrapper.findAll('button').find((b) => b.text().includes('Archive Account'))
@@ -146,14 +146,14 @@ describe('EditAccountSheet', () => {
   })
 
   it('shows helper text when archive is disabled', async () => {
-    _activeAccounts.value = [makeAccount()]
+    _accounts.value = [makeAccount()]
     const wrapper = mountSheet()
     await flushPromises()
     expect(wrapper.text()).toContain('Cannot archive your only active account.')
   })
 
   it('shows archive confirmation dialog when archive button is clicked', async () => {
-    _activeAccounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
+    _accounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
     const wrapper = mountSheet()
     await flushPromises()
     const archiveBtn = wrapper.findAll('button').find((b) => b.text().includes('Archive Account'))
@@ -164,7 +164,7 @@ describe('EditAccountSheet', () => {
   })
 
   it('calls archiveAccount on confirmation', async () => {
-    _activeAccounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
+    _accounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
     _archiveAccount.mockResolvedValueOnce(undefined)
     const wrapper = mountSheet()
     await flushPromises()
@@ -179,7 +179,7 @@ describe('EditAccountSheet', () => {
   })
 
   it('emits archived event after successful archive', async () => {
-    _activeAccounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
+    _accounts.value = [makeAccount(), makeAccount({ id: 'acc-2' })]
     _archiveAccount.mockResolvedValueOnce(undefined)
     const wrapper = mountSheet()
     await flushPromises()

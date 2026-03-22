@@ -217,7 +217,7 @@ function closeEdit() {
     <AddSubscriptionSheet
       :open="showAddSheet"
       :categories="categoriesStore.categories"
-      :accounts="accountsStore.activeAccounts"
+      :accounts="accountsStore.accounts"
       :currency="authStore.defaultCurrency"
       @close="showAddSheet = false"
       @created="onCreated"
@@ -228,7 +228,7 @@ function closeEdit() {
       :open="showEditSheet"
       :subscription="selectedSubscription"
       :categories="categoriesStore.categories"
-      :accounts="accountsStore.activeAccounts"
+      :accounts="accountsStore.accounts"
       :currency="authStore.defaultCurrency"
       @close="closeEdit"
       @saved="onSaved"

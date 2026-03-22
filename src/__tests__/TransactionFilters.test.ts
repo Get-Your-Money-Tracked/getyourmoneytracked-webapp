@@ -11,8 +11,8 @@ vi.mock('lucide-vue-next', () => ({
 }))
 
 const accounts: Account[] = [
-  { id: 'acc-1', name: 'Cash', type: 'CASH', currency: 'USD', balance: 100, icon: null, isDefault: true, isArchived: false },
-  { id: 'acc-2', name: 'Bank', type: 'BANK', currency: 'USD', balance: 1000, icon: null, isDefault: false, isArchived: false },
+  { id: 'acc-1', name: 'Cash', type: 'CASH', currency: 'USD', balance: 100, icon: null, isDefault: true, includeInTotal: true },
+  { id: 'acc-2', name: 'Bank', type: 'BANK', currency: 'USD', balance: 1000, icon: null, isDefault: false, includeInTotal: true },
 ]
 
 const categories: Category[] = [

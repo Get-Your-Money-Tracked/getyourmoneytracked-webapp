@@ -1,10 +1,23 @@
 import { urqlClient } from '@/lib/urql'
 import type { Budget } from '@/types'
+import { parseMoney, toMoney } from '@/utils/currency'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse Money scalars (strings) to numbers on a Budget response object */
+function parseBudgetMoney(raw: Record<string, unknown>): Budget {
+  return {
+    ...raw,
+    amount: parseMoney(raw.amount),
+    spent: parseMoney(raw.spent),
+    remaining: parseMoney(raw.remaining),
+  } as Budget
+}
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 const BUDGETS_QUERY = `
-  query Budgets($month: String) {
+  query Budgets($month: Date) {
     budgets(month: $month) {
       id
       month
@@ -94,21 +107,24 @@ export interface UpdateBudgetInput {
 export async function fetchBudgets(month?: string | null): Promise<Budget[]> {
   const result = await urqlClient.query(BUDGETS_QUERY, { month: month ?? null }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to fetch budgets.')
-  return (result.data?.budgets as Budget[]) ?? []
+  const raw = (result.data?.budgets as Record<string, unknown>[]) ?? []
+  return raw.map(parseBudgetMoney)
 }
 
 export async function callCreateBudget(input: CreateBudgetInput): Promise<Budget> {
-  const result = await urqlClient.mutation(CREATE_BUDGET_MUTATION, { input }).toPromise()
+  const gqlInput = { ...input, amount: toMoney(input.amount) }
+  const result = await urqlClient.mutation(CREATE_BUDGET_MUTATION, { input: gqlInput }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to create budget.')
   if (!result.data?.createBudget) throw new Error('No data returned from createBudget.')
-  return result.data.createBudget as Budget
+  return parseBudgetMoney(result.data.createBudget as Record<string, unknown>)
 }
 
 export async function callUpdateBudget(id: string, input: UpdateBudgetInput): Promise<Budget> {
-  const result = await urqlClient.mutation(UPDATE_BUDGET_MUTATION, { id, input }).toPromise()
+  const gqlInput = { amount: toMoney(input.amount) }
+  const result = await urqlClient.mutation(UPDATE_BUDGET_MUTATION, { id, input: gqlInput }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to update budget.')
   if (!result.data?.updateBudget) throw new Error('No data returned from updateBudget.')
-  return result.data.updateBudget as Budget
+  return parseBudgetMoney(result.data.updateBudget as Record<string, unknown>)
 }
 
 export async function callDeleteBudget(id: string): Promise<void> {

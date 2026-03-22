@@ -59,7 +59,6 @@ vi.mock('@/stores/accounts', () => ({
   useAccountsStore: () =>
     reactive({
       get accounts() { return _mockAccounts.value },
-      get activeAccounts() { return _mockAccounts.value.filter((a) => !a.isArchived) },
       loadAccounts: vi.fn(async () => {}),
     }),
 }))
@@ -111,7 +110,7 @@ function makeSub(overrides: Partial<SubscriptionEntry> = {}): SubscriptionEntry 
       balance: 500,
       icon: null,
       isDefault: true,
-      isArchived: false,
+      includeInTotal: true,
     },
     ...overrides,
   }

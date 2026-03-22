@@ -61,7 +61,7 @@ const defaultAccounts: Account[] = [
     balance: 500,
     icon: null,
     isDefault: true,
-    isArchived: false,
+    includeInTotal: true,
   },
 ]
 

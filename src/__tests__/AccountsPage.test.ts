@@ -37,15 +37,11 @@ vi.mock('@/stores/accounts', () => ({
       get isLoading() {
         return _mockIsLoading.value
       },
-      get activeAccounts() {
-        return _mockAccounts.value.filter((a: Account) => !a.isArchived)
-      },
-      get archivedAccounts() {
-        return _mockAccounts.value.filter((a: Account) => a.isArchived)
+      get accounts() {
+        return _mockAccounts.value
       },
       get totalBalance() {
         return _mockAccounts.value
-          .filter((a: Account) => !a.isArchived)
           .reduce((sum: number, a: Account) => sum + a.balance, 0)
       },
       loadAccounts: _mockLoadAccounts,
@@ -66,7 +62,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     balance: 5000,
     icon: null,
     isDefault: true,
-    isArchived: false,
+    includeInTotal: true,
     ...overrides,
   }
 }
@@ -147,14 +143,4 @@ describe('AccountsPage', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
   })
 
-  it('shows archived section when archived accounts exist', async () => {
-    _mockIsLoading.value = false
-    _mockAccounts.value = [
-      makeAccount(),
-      makeAccount({ id: 'acc-archived', name: 'Old Account', isArchived: true }),
-    ]
-    const wrapper = mountPage()
-    await flushPromises()
-    expect(wrapper.text()).toContain('Archived (1)')
-  })
 })

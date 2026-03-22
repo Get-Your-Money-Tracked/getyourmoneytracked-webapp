@@ -18,24 +18,14 @@ export const useAccountsStore = defineStore('accounts', () => {
 
   // ── Computed ─────────────────────────────────────────────────
 
-  /** Only non-archived accounts */
-  const activeAccounts = computed(() =>
-    accounts.value.filter((a) => !a.isArchived),
-  )
-
-  /** Only archived accounts */
-  const archivedAccounts = computed(() =>
-    accounts.value.filter((a) => a.isArchived),
-  )
-
-  /** Sum of all active account balances */
+  /** Sum of all account balances */
   const totalBalance = computed(() =>
-    activeAccounts.value.reduce((sum, a) => sum + a.balance, 0),
+    accounts.value.reduce((sum, a) => sum + a.balance, 0),
   )
 
   /** The current default account, if any */
   const defaultAccount = computed(() =>
-    activeAccounts.value.find((a) => a.isDefault) ?? null,
+    accounts.value.find((a) => a.isDefault) ?? null,
   )
 
   // ── Actions ──────────────────────────────────────────────────
@@ -93,10 +83,8 @@ export const useAccountsStore = defineStore('accounts', () => {
     error.value = null
     try {
       await callArchiveAccount(id)
-      // Remove from active list (set isArchived = true locally)
-      accounts.value = accounts.value.map((a) =>
-        a.id === id ? { ...a, isArchived: true } : a,
-      )
+      // Backend only returns non-archived accounts, so remove from local list
+      accounts.value = accounts.value.filter((a) => a.id !== id)
     } catch (e: unknown) {
       error.value = (e as Error).message ?? 'Failed to archive account.'
       throw e
@@ -111,8 +99,6 @@ export const useAccountsStore = defineStore('accounts', () => {
     accounts,
     isLoading,
     error,
-    activeAccounts,
-    archivedAccounts,
     totalBalance,
     defaultAccount,
     loadAccounts,

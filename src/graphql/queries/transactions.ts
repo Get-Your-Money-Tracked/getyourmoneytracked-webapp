@@ -1,10 +1,21 @@
 import { urqlClient } from '@/lib/urql'
 import type { Transaction } from '@/types'
+import { parseMoney, toMoney } from '@/utils/currency'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse Money scalars (strings) to numbers on a Transaction response object */
+function parseTransactionMoney(raw: Record<string, unknown>): Transaction {
+  return {
+    ...raw,
+    amount: parseMoney(raw.amount),
+  } as Transaction
+}
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 const TRANSACTIONS_QUERY = `
-  query Transactions($filter: TransactionFilter) {
+  query Transactions($filter: TransactionFilterInput) {
     transactions(filter: $filter) {
       id
       type
@@ -46,8 +57,8 @@ const CREATE_TRANSACTION_MUTATION = `
 `
 
 const UPDATE_TRANSACTION_MUTATION = `
-  mutation UpdateTransaction($id: ID!, $input: UpdateTransactionInput!) {
-    updateTransaction(id: $id, input: $input) {
+  mutation UpdateTransaction($input: UpdateTransactionInput!) {
+    updateTransaction(input: $input) {
       id
       type
       amount
@@ -67,7 +78,9 @@ const UPDATE_TRANSACTION_MUTATION = `
 
 const DELETE_TRANSACTION_MUTATION = `
   mutation DeleteTransaction($id: ID!) {
-    deleteTransaction(id: $id)
+    deleteTransaction(id: $id) {
+      id
+    }
   }
 `
 
@@ -98,10 +111,10 @@ export interface CreateTransactionInput {
 }
 
 export interface UpdateTransactionInput {
-  type?: string
-  amount?: number
-  date?: string
-  accountId?: string
+  type: string
+  amount: number
+  date: string
+  accountId: string
   toAccountId?: string | null
   categoryId?: string | null
   description?: string | null
@@ -117,12 +130,14 @@ export async function fetchTransactions(filter?: TransactionFilter): Promise<Tra
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch transactions.')
   }
-  return (result.data?.transactions as Transaction[]) ?? []
+  const raw = (result.data?.transactions as Record<string, unknown>[]) ?? []
+  return raw.map(parseTransactionMoney)
 }
 
 export async function callCreateTransaction(input: CreateTransactionInput): Promise<Transaction> {
+  const gqlInput = { ...input, amount: toMoney(input.amount) }
   const result = await urqlClient
-    .mutation(CREATE_TRANSACTION_MUTATION, { input })
+    .mutation(CREATE_TRANSACTION_MUTATION, { input: gqlInput })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to create transaction.')
@@ -130,15 +145,16 @@ export async function callCreateTransaction(input: CreateTransactionInput): Prom
   if (!result.data?.createTransaction) {
     throw new Error('No data returned from createTransaction.')
   }
-  return result.data.createTransaction as Transaction
+  return parseTransactionMoney(result.data.createTransaction as Record<string, unknown>)
 }
 
 export async function callUpdateTransaction(
   id: string,
   input: UpdateTransactionInput,
 ): Promise<Transaction> {
+  const gqlInput = { id, ...input, amount: toMoney(input.amount) }
   const result = await urqlClient
-    .mutation(UPDATE_TRANSACTION_MUTATION, { id, input })
+    .mutation(UPDATE_TRANSACTION_MUTATION, { input: gqlInput })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to update transaction.')
@@ -146,7 +162,7 @@ export async function callUpdateTransaction(
   if (!result.data?.updateTransaction) {
     throw new Error('No data returned from updateTransaction.')
   }
-  return result.data.updateTransaction as Transaction
+  return parseTransactionMoney(result.data.updateTransaction as Record<string, unknown>)
 }
 
 export async function callDeleteTransaction(id: string): Promise<void> {

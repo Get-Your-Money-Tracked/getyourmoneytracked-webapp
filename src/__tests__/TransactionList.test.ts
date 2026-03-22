@@ -33,7 +33,7 @@ function yesterdayIso() {
 }
 
 const accounts: Account[] = [
-  { id: 'acc-1', name: 'Cash', type: 'CASH', currency: 'USD', balance: 100, icon: null, isDefault: true, isArchived: false },
+  { id: 'acc-1', name: 'Cash', type: 'CASH', currency: 'USD', balance: 100, icon: null, isDefault: true, includeInTotal: true },
 ]
 const categories: Category[] = [
   { id: 'cat-1', name: 'Food', icon: '🍽️', color: '#FF9800', parentId: null, isDefault: true, sortOrder: 0 },

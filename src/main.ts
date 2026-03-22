@@ -32,21 +32,20 @@ setOnUnauthorized(async () => {
 // Route guard — protect authenticated routes
 // Note: while isLoading is true Firebase hasn't resolved yet — allow navigation
 // through so that App.vue shows the loader and the guard re-runs after resolution
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   // While auth is still loading, let it pass — App.vue shows AppLoader
   if (authStore.isLoading) {
-    return next()
+    return true
   }
 
   const requiresAuth = to.meta.requiresAuth !== false
 
   if (requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'login' })
+    return { name: 'login' }
   } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next({ name: 'dashboard' })
-  } else {
-    next()
+    return { name: 'dashboard' }
   }
+  // implicitly returns undefined — navigation proceeds
 })
 
 // Wait for Firebase to resolve auth state before mounting the app.

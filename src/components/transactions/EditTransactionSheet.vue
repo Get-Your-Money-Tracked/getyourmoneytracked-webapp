@@ -65,7 +65,7 @@ const originalSnapshot = ref<{
 } | null>(null)
 
 // ── Helpers ───────────────────────────────────────────────────
-const activeAccounts = computed(() => accountsStore.activeAccounts)
+const activeAccounts = computed(() => accountsStore.accounts)
 const currency = computed(() => authStore.defaultCurrency || 'USD')
 
 const isDirty = computed(() => {

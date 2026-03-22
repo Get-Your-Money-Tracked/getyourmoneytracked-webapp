@@ -17,7 +17,7 @@ function makeAccount(id: string, name: string, isDefault = false): Account {
     balance: 100,
     icon: null,
     isDefault,
-    isArchived: false,
+    includeInTotal: true,
   }
 }
 

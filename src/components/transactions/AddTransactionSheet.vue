@@ -56,7 +56,7 @@ function todayIso(): string {
 }
 
 // ── Computed ──────────────────────────────────────────────────
-const activeAccounts = computed(() => accountsStore.activeAccounts)
+const activeAccounts = computed(() => accountsStore.accounts)
 
 const currency = computed(() => authStore.defaultCurrency || 'USD')
 

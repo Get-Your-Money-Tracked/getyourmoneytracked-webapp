@@ -1,5 +1,6 @@
 import { urqlClient } from '@/lib/urql'
 import type { MonthlySummary, MonthDetail } from '@/types'
+import { parseMoney } from '@/utils/currency'
 import { DEFAULT_HISTORY_LIMIT } from '@/utils/constants'
 
 // ── Sort enum ─────────────────────────────────────────────────────────────────
@@ -11,6 +12,44 @@ export type MonthlySortOption =
   | 'LOWEST_EXPENSES'
   | 'HIGHEST_PERCENT_SPENT'
   | 'LOWEST_PERCENT_SPENT'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse Money scalars in a MonthlySummary */
+function parseSummaryMoney(raw: Record<string, unknown>): MonthlySummary {
+  return {
+    ...raw,
+    totalIncome: parseMoney(raw.totalIncome),
+    totalExpenses: parseMoney(raw.totalExpenses),
+  } as MonthlySummary
+}
+
+/** Parse Money scalars in a MonthDetail */
+function parseMonthDetailMoney(raw: Record<string, unknown>): MonthDetail {
+  const categoryBreakdown = (raw.categoryBreakdown as Record<string, unknown>[]) ?? []
+  const transactions = (raw.transactions as Record<string, unknown>[]) ?? []
+  const budgets = (raw.budgets as Record<string, unknown>[]) ?? []
+
+  return {
+    ...raw,
+    totalIncome: parseMoney(raw.totalIncome),
+    totalExpenses: parseMoney(raw.totalExpenses),
+    categoryBreakdown: categoryBreakdown.map((cs) => ({
+      ...cs,
+      amount: parseMoney(cs.amount),
+    })),
+    transactions: transactions.map((t) => ({
+      ...t,
+      amount: parseMoney(t.amount),
+    })),
+    budgets: budgets.map((bp) => ({
+      ...bp,
+      limit: parseMoney(bp.limit),
+      spent: parseMoney(bp.spent),
+      remaining: parseMoney(bp.remaining),
+    })),
+  } as MonthDetail
+}
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
@@ -26,7 +65,7 @@ const MONTHLY_SUMMARIES_QUERY = `
 `
 
 const MONTH_DETAIL_QUERY = `
-  query MonthDetail($month: String!) {
+  query MonthDetail($month: Date!) {
     monthDetail(month: $month) {
       month
       totalIncome
@@ -83,7 +122,8 @@ export async function fetchMonthlySummaries(
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch monthly summaries.')
   }
-  return (result.data?.monthlySummaries as MonthlySummary[]) ?? []
+  const raw = (result.data?.monthlySummaries as Record<string, unknown>[]) ?? []
+  return raw.map(parseSummaryMoney)
 }
 
 export async function fetchMonthDetail(month: string): Promise<MonthDetail> {
@@ -96,5 +136,5 @@ export async function fetchMonthDetail(month: string): Promise<MonthDetail> {
   if (!result.data?.monthDetail) {
     throw new Error('No data returned from monthDetail query.')
   }
-  return result.data.monthDetail as MonthDetail
+  return parseMonthDetailMoney(result.data.monthDetail as Record<string, unknown>)
 }

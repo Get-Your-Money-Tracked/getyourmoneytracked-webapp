@@ -40,7 +40,6 @@ const _mockLoadAccounts = vi.fn()
 vi.mock('@/stores/accounts', () => ({
   useAccountsStore: () =>
     reactive({
-      get activeAccounts() { return _mockActiveAccounts.value },
       get accounts() { return _mockActiveAccounts.value },
       get defaultAccount() { return _mockDefaultAccount.value },
       loadAccounts: _mockLoadAccounts,
@@ -128,7 +127,7 @@ const defaultAccount: Account = {
   balance: 1000,
   icon: null,
   isDefault: true,
-  isArchived: false,
+  includeInTotal: true,
 }
 
 const defaultCategory: Category = {

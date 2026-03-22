@@ -31,7 +31,7 @@ const accounts: Account[] = [
     balance: 100,
     icon: '💵',
     isDefault: true,
-    isArchived: false,
+    includeInTotal: true,
   },
   {
     id: 'acc-2',
@@ -41,7 +41,7 @@ const accounts: Account[] = [
     balance: 2000,
     icon: '🏦',
     isDefault: false,
-    isArchived: false,
+    includeInTotal: true,
   },
 ]
 

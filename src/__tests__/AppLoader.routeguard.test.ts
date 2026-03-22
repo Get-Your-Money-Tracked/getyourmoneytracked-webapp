@@ -48,15 +48,13 @@ describe('Route guard logic', () => {
     const authStore = useAuthStore()
     authStore.setUser(null) // unauthenticated
 
-    router.beforeEach((to, _from, next) => {
-      if (authStore.isLoading) return next()
+    router.beforeEach((to) => {
+      if (authStore.isLoading) return true
       const requiresAuth = to.meta.requiresAuth !== false
       if (requiresAuth && !authStore.isAuthenticated) {
-        next({ name: 'login' })
+        return { name: 'login' }
       } else if (to.name === 'login' && authStore.isAuthenticated) {
-        next({ name: 'dashboard' })
-      } else {
-        next()
+        return { name: 'dashboard' }
       }
     })
 
@@ -70,15 +68,13 @@ describe('Route guard logic', () => {
     const authStore = useAuthStore()
     authStore.setUser({ uid: 'abc', email: 'a@b.com', displayName: 'A' } as never)
 
-    router.beforeEach((to, _from, next) => {
-      if (authStore.isLoading) return next()
+    router.beforeEach((to) => {
+      if (authStore.isLoading) return true
       const requiresAuth = to.meta.requiresAuth !== false
       if (requiresAuth && !authStore.isAuthenticated) {
-        next({ name: 'login' })
+        return { name: 'login' }
       } else if (to.name === 'login' && authStore.isAuthenticated) {
-        next({ name: 'dashboard' })
-      } else {
-        next()
+        return { name: 'dashboard' }
       }
     })
 

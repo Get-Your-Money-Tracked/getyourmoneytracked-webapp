@@ -110,3 +110,26 @@ export function parseBalanceInput(value: string): number {
   const parsed = parseFloat(value.replace(/,/g, ''))
   return isNaN(parsed) ? 0 : parsed
 }
+
+/**
+ * Parse a GraphQL Money scalar (string like "123.45") to a number.
+ * The backend serializes Money as a string to avoid float precision issues.
+ * Returns 0 for null/undefined/empty/invalid input.
+ */
+export function parseMoney(value: unknown): number {
+  if (value == null) return 0
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+/**
+ * Convert a number to a Money string for GraphQL input.
+ * The backend expects Money as a string like "123.45".
+ */
+export function toMoney(value: number): string {
+  return value.toString()
+}

@@ -22,7 +22,7 @@ export interface Account {
   balance: number
   icon: string | null
   isDefault: boolean
-  isArchived: boolean
+  includeInTotal: boolean
 }
 
 export interface Category {

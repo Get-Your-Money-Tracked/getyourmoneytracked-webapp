@@ -29,7 +29,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     balance: 1000,
     icon: null,
     isDefault: false,
-    isArchived: false,
+    includeInTotal: true,
     ...overrides,
   }
 }

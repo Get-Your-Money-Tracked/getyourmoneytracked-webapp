@@ -1,5 +1,16 @@
 import { urqlClient } from '@/lib/urql'
 import type { Account } from '@/types'
+import { parseMoney } from '@/utils/currency'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse Money scalars (strings) to numbers on an Account response object */
+function parseAccountMoney(raw: Record<string, unknown>): Account {
+  return {
+    ...raw,
+    balance: parseMoney(raw.balance),
+  } as Account
+}
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
@@ -13,7 +24,7 @@ const ACCOUNTS_QUERY = `
       balance
       icon
       isDefault
-      isArchived
+      includeInTotal
     }
   }
 `
@@ -30,14 +41,14 @@ const CREATE_ACCOUNT_MUTATION = `
       balance
       icon
       isDefault
-      isArchived
+      includeInTotal
     }
   }
 `
 
 const UPDATE_ACCOUNT_MUTATION = `
-  mutation UpdateAccount($id: ID!, $input: UpdateAccountInput!) {
-    updateAccount(id: $id, input: $input) {
+  mutation UpdateAccount($input: UpdateAccountInput!) {
+    updateAccount(input: $input) {
       id
       name
       type
@@ -45,7 +56,7 @@ const UPDATE_ACCOUNT_MUTATION = `
       balance
       icon
       isDefault
-      isArchived
+      includeInTotal
     }
   }
 `
@@ -54,7 +65,6 @@ const ARCHIVE_ACCOUNT_MUTATION = `
   mutation ArchiveAccount($id: ID!) {
     archiveAccount(id: $id) {
       id
-      isArchived
     }
   }
 `
@@ -66,7 +76,8 @@ export async function fetchAccounts(): Promise<Account[]> {
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch accounts.')
   }
-  return (result.data?.accounts as Account[]) ?? []
+  const raw = (result.data?.accounts as Record<string, unknown>[]) ?? []
+  return raw.map(parseAccountMoney)
 }
 
 export interface CreateAccountInput {
@@ -87,7 +98,7 @@ export async function callCreateAccount(input: CreateAccountInput): Promise<Acco
   if (!result.data?.createAccount) {
     throw new Error('No data returned from createAccount.')
   }
-  return result.data.createAccount as Account
+  return parseAccountMoney(result.data.createAccount as Record<string, unknown>)
 }
 
 export interface UpdateAccountInput {
@@ -98,7 +109,7 @@ export interface UpdateAccountInput {
 
 export async function callUpdateAccount(id: string, input: UpdateAccountInput): Promise<Account> {
   const result = await urqlClient
-    .mutation(UPDATE_ACCOUNT_MUTATION, { id, input })
+    .mutation(UPDATE_ACCOUNT_MUTATION, { input: { id, ...input } })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to update account.')
@@ -106,7 +117,7 @@ export async function callUpdateAccount(id: string, input: UpdateAccountInput): 
   if (!result.data?.updateAccount) {
     throw new Error('No data returned from updateAccount.')
   }
-  return result.data.updateAccount as Account
+  return parseAccountMoney(result.data.updateAccount as Record<string, unknown>)
 }
 
 export async function callArchiveAccount(id: string): Promise<void> {
