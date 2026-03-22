@@ -65,14 +65,14 @@ describe('MonthSummaryRow', () => {
     expect(wrapper.find('[data-testid="percent-badge"]').text()).toBe('40%')
   })
 
-  it('renders green percent badge for 70%', () => {
+  it('renders warning percent badge for 70%', () => {
     const wrapper = mountRow(makeSummary({ percentSpent: 70 }))
-    expect(wrapper.find('[data-testid="percent-badge"]').classes()).toContain('text-primary')
+    expect(wrapper.find('[data-testid="percent-badge"]').classes()).toContain('text-warning')
   })
 
-  it('renders warning percent badge for 89%', () => {
+  it('renders danger percent badge for 89%', () => {
     const wrapper = mountRow(makeSummary({ percentSpent: 89 }))
-    expect(wrapper.find('[data-testid="percent-badge"]').classes()).toContain('text-warning')
+    expect(wrapper.find('[data-testid="percent-badge"]').classes()).toContain('text-danger')
   })
 
   it('renders danger percent badge for 95%', () => {

@@ -17,7 +17,8 @@ describe('PercentBadge', () => {
     expect(wrapper.find('[data-testid="percent-badge"]').text()).toBe('41%')
   })
 
-  // ── Green (0–70%) ──────────────────────────────────────────────────────────
+  // ── Green / ON_TRACK (0–50%) ────────────────────────────────────────────────
+  // Backend thresholds: 0–50% ON_TRACK, 51–85% WARNING, 86%+ EXCEEDED
 
   it('applies green classes for 0%', () => {
     const wrapper = mountBadge(0)
@@ -27,39 +28,39 @@ describe('PercentBadge', () => {
     expect(badge.classes()).not.toContain('text-danger')
   })
 
-  it('applies green classes for 70%', () => {
-    const wrapper = mountBadge(70)
+  it('applies green classes for 50%', () => {
+    const wrapper = mountBadge(50)
     const badge = wrapper.find('[data-testid="percent-badge"]')
     expect(badge.classes()).toContain('text-primary')
     expect(badge.classes()).not.toContain('text-warning')
   })
 
-  // ── Yellow (71–90%) ───────────────────────────────────────────────────────
+  // ── Yellow / WARNING (51–85%) ──────────────────────────────────────────────
 
-  it('applies yellow/warning classes for 71%', () => {
-    const wrapper = mountBadge(71)
+  it('applies yellow/warning classes for 51%', () => {
+    const wrapper = mountBadge(51)
     const badge = wrapper.find('[data-testid="percent-badge"]')
     expect(badge.classes()).toContain('text-warning')
     expect(badge.classes()).not.toContain('text-primary')
     expect(badge.classes()).not.toContain('text-danger')
   })
 
-  it('applies yellow/warning classes for 89%', () => {
-    const wrapper = mountBadge(89)
+  it('applies yellow/warning classes for 70%', () => {
+    const wrapper = mountBadge(70)
     const badge = wrapper.find('[data-testid="percent-badge"]')
     expect(badge.classes()).toContain('text-warning')
   })
 
-  it('applies yellow/warning classes for 90%', () => {
-    const wrapper = mountBadge(90)
+  it('applies yellow/warning classes for 85%', () => {
+    const wrapper = mountBadge(85)
     const badge = wrapper.find('[data-testid="percent-badge"]')
     expect(badge.classes()).toContain('text-warning')
   })
 
-  // ── Red (91–100%) ─────────────────────────────────────────────────────────
+  // ── Red / EXCEEDED (86–100%) ───────────────────────────────────────────────
 
-  it('applies danger classes for 91%', () => {
-    const wrapper = mountBadge(91)
+  it('applies danger classes for 86%', () => {
+    const wrapper = mountBadge(86)
     const badge = wrapper.find('[data-testid="percent-badge"]')
     expect(badge.classes()).toContain('text-danger')
     expect(badge.classes()).not.toContain('text-warning')
