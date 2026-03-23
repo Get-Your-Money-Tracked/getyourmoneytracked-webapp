@@ -26,6 +26,7 @@ const mockIsLoading = ref(false)
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
     isLoading: mockIsLoading.value,
+    isSubmitting: mockIsLoading.value,
     error: mockError.value,
     isAuthenticated: false,
     login: mockLogin,

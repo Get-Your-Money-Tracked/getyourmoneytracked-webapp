@@ -11,6 +11,10 @@ const props = defineProps<{
   categories: Category[]
 }>()
 
+const emit = defineEmits<{
+  edit: [transaction: Transaction]
+}>()
+
 const router = useRouter()
 
 function navigateToAll() {
@@ -117,6 +121,7 @@ const hasTransactions = computed(() => props.transactions.length > 0)
           type="button"
           class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted"
           :data-testid="`transaction-item-${tx.id}`"
+          @click="emit('edit', tx)"
         >
           <!-- Color dot + icon -->
           <div class="flex flex-col items-center gap-1">

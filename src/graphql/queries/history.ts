@@ -126,9 +126,16 @@ export async function fetchMonthlySummaries(
   return raw.map(parseSummaryMoney)
 }
 
+/** Normalise "YYYY-MM" → "YYYY-MM-01" for the backend Date scalar. */
+function normalizeMonth(month: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(month)) return month
+  if (/^\d{4}-\d{2}$/.test(month)) return `${month}-01`
+  return month
+}
+
 export async function fetchMonthDetail(month: string): Promise<MonthDetail> {
   const result = await urqlClient
-    .query(MONTH_DETAIL_QUERY, { month })
+    .query(MONTH_DETAIL_QUERY, { month: normalizeMonth(month) })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch month detail.')

@@ -118,7 +118,25 @@ describe('BottomNav', () => {
     expect(wrapper.find('[data-testid="nav-budgets"]').attributes('href')).toBe('/budgets')
   })
 
-  // ── "More" menu ───────────────────────────────────────────────
+  // ── Center "+" button (Story 11.4) ───────────────────────────
+  it('renders the center Add Transaction button', async () => {
+    const wrapper = await mountNav()
+    expect(wrapper.find('[data-testid="nav-add-transaction"]').exists()).toBe(true)
+  })
+
+  it('center Add Transaction button has correct aria-label', async () => {
+    const wrapper = await mountNav()
+    const btn = wrapper.find('[data-testid="nav-add-transaction"]')
+    expect(btn.attributes('aria-label')).toBe('Add transaction')
+  })
+
+  it('clicking center button emits add-transaction event', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-add-transaction"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted('add-transaction')).toBeTruthy()
+    expect(wrapper.emitted('add-transaction')!.length).toBe(1)
+  })
   it('More menu is hidden by default', async () => {
     const wrapper = await mountNav()
     expect(wrapper.find('[data-testid="more-menu"]').exists()).toBe(false)

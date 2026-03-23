@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { Wallet } from 'lucide-vue-next'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAuthStore } from '@/stores/auth'
 import AccountCard from '@/components/accounts/AccountCard.vue'
 import TotalBalanceCard from '@/components/accounts/TotalBalanceCard.vue'
 import AddAccountSheet from '@/components/accounts/AddAccountSheet.vue'
 import EditAccountSheet from '@/components/accounts/EditAccountSheet.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { Account } from '@/types'
+import PageTip from '@/components/common/PageTip.vue'
 
 const accountsStore = useAccountsStore()
 const authStore = useAuthStore()
@@ -71,6 +74,9 @@ const SKELETON_COUNT = 3
       <!-- Page title -->
       <h1 class="text-page-title mb-5 font-bold text-text-primary">Accounts</h1>
 
+      <!-- Page tip (new users only, dismissible) -->
+      <PageTip page-key="accounts" />
+
       <!-- Loading state -->
       <template v-if="isLoading">
         <!-- Total balance skeleton -->
@@ -96,40 +102,13 @@ const SKELETON_COUNT = 3
 
       <!-- Empty state -->
       <template v-else-if="!hasAccounts">
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <!-- Wallet icon -->
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="mb-4 h-12 w-12 opacity-50 text-text-muted"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-            aria-hidden="true"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M21 12V7H5a2 2 0 010-4h14v4M21 12a2 2 0 010 4H5a2 2 0 01-2-2V5"
-            />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12h-3a2 2 0 000 4h3" />
-          </svg>
-          <h2 class="text-section-title mb-2 font-semibold text-text-secondary">
-            No accounts yet
-          </h2>
-          <p class="text-body mb-6 max-w-[250px] text-text-muted">
-            Add your first account to start tracking your finances
-          </p>
-          <button
-            type="button"
-            class="flex h-12 items-center gap-2 rounded-xl px-6 font-semibold text-white transition-opacity"
-            :style="{ backgroundColor: 'var(--color-primary)' }"
-            @click="openAddSheet"
-          >
-            <span aria-hidden="true">+</span>
-            Add Account
-          </button>
-        </div>
+        <EmptyState
+          :icon="Wallet"
+          title="No accounts yet"
+          description="Add your bank accounts, credit cards, or wallets to track your balances."
+          action-label="Add your first account"
+          @action="openAddSheet"
+        />
       </template>
 
       <!-- Account list -->

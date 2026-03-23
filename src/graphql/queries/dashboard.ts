@@ -81,9 +81,21 @@ const DASHBOARD_QUERY = `
 
 // ── Typed call function ───────────────────────────────────────────────────────
 
-export async function fetchDashboard(month?: string): Promise<Dashboard> {
+/** Normalise "YYYY-MM" → "YYYY-MM-01" for the backend Date scalar. */
+function normalizeMonth(month: string | undefined | null): string | null {
+  if (!month) return null
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(month)) return month
+  // YYYY-MM → append -01
+  if (/^\d{4}-\d{2}$/.test(month)) return `${month}-01`
+  return month
+}
+
+export async function fetchDashboard(month?: string, bypassCache = false): Promise<Dashboard> {
   const result = await urqlClient
-    .query(DASHBOARD_QUERY, { month: month ?? null })
+    .query(DASHBOARD_QUERY, { month: normalizeMonth(month) }, {
+      requestPolicy: bypassCache ? 'network-only' : 'cache-first',
+    })
     .toPromise()
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch dashboard.')

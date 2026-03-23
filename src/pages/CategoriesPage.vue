@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { FolderOpen } from 'lucide-vue-next'
 import { useCategoriesStore } from '@/stores/categories'
 import CategoryListItem from '@/components/categories/CategoryListItem.vue'
 import AddCategorySheet from '@/components/categories/AddCategorySheet.vue'
 import EditCategorySheet from '@/components/categories/EditCategorySheet.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { Category } from '@/types'
 
 const router = useRouter()
@@ -109,26 +111,14 @@ const SKELETON_COUNT = 6
       </template>
 
       <!-- Empty state -->
-      <template v-else-if="categoriesStore.nestedCategories.length === 0">
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <span class="mb-4 text-5xl opacity-40" aria-hidden="true">🏷️</span>
-          <h2 class="text-section-title mb-2 font-semibold text-text-secondary">
-            No categories yet
-          </h2>
-          <p class="text-body mb-6 max-w-[250px] text-text-muted">
-            Add categories to organize your transactions
-          </p>
-          <button
-            type="button"
-            class="flex h-12 items-center gap-2 rounded-xl px-6 font-semibold text-white transition-opacity"
-            :style="{ backgroundColor: 'var(--color-primary)' }"
-            @click="showAddSheet = true"
-          >
-            <span aria-hidden="true">+</span>
-            Add Category
-          </button>
-        </div>
-      </template>
+      <EmptyState
+        v-else-if="categoriesStore.nestedCategories.length === 0"
+        :icon="FolderOpen"
+        title="No categories yet"
+        description="Categories organize your spending into groups like Food, Transport, and Entertainment."
+        action-label="Add Category"
+        @action="showAddSheet = true"
+      />
 
       <!-- Category list -->
       <template v-else>

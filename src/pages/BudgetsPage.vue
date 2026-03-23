@@ -10,6 +10,8 @@ import BudgetCard from '@/components/budgets/BudgetCard.vue'
 import BudgetSummaryCard from '@/components/budgets/BudgetSummaryCard.vue'
 import CreateBudgetSheet from '@/components/budgets/CreateBudgetSheet.vue'
 import EditBudgetSheet from '@/components/budgets/EditBudgetSheet.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import PageTip from '@/components/common/PageTip.vue'
 
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
@@ -72,6 +74,9 @@ function closeEdit() {
       </button>
     </div>
 
+    <!-- Page tip (new users only, dismissible) -->
+    <PageTip page-key="budgets" />
+
     <!-- Loading skeleton -->
     <div
       v-if="budgetsStore.isLoading"
@@ -98,25 +103,15 @@ function closeEdit() {
     </div>
 
     <!-- Empty state -->
-    <div
+    <EmptyState
       v-else-if="budgetsStore.budgets.length === 0"
-      class="mx-4 rounded-2xl bg-surface-muted p-8 text-center"
-      data-testid="empty-state"
-    >
-      <Target :size="32" class="mx-auto text-text-muted" aria-hidden="true" />
-      <p class="mt-3 text-body font-semibold text-text-primary">No budgets set for this month.</p>
-      <p class="mt-1 text-caption text-text-secondary">Create one to start tracking your spending.</p>
-      <button
-        type="button"
-        class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white"
-        :style="{ backgroundColor: 'var(--color-primary)' }"
-        data-testid="empty-create-btn"
-        @click="openCreate"
-      >
-        <Plus :size="16" aria-hidden="true" />
-        Create Budget
-      </button>
-    </div>
+      :icon="Target"
+      title="No budgets set for this month."
+      description="Set spending limits for categories to stay on track. We'll warn you when you're getting close."
+      action-label="Create Budget"
+      action-test-id="empty-create-btn"
+      @action="openCreate"
+    />
 
     <!-- Budget list -->
     <template v-else>

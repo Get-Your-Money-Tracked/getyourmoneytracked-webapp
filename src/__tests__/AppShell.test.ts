@@ -133,7 +133,7 @@ describe('AppShell (App.vue)', () => {
     expect(wrapper.find('nav[aria-label="Main navigation"]').exists()).toBe(true)
   })
 
-  it('renders FAB for authenticated users', async () => {
+  it('renders Add Transaction button for authenticated users (in BottomNav)', async () => {
     _mockIsAuthenticated.value = true
     _mockIsLoading.value = false
     const router = createTestRouter('/dashboard')

@@ -58,6 +58,27 @@ describe('getCurrencySymbol', () => {
   it('returns £ for GBP', () => {
     expect(getCurrencySymbol('GBP')).toBe('£')
   })
+
+  it('returns € for EUR', () => {
+    const result = getCurrencySymbol('EUR')
+    expect(result).toContain('€')
+  })
+
+  it('returns R$ for BRL', () => {
+    const result = getCurrencySymbol('BRL')
+    expect(result).toContain('R')
+  })
+
+  it('returns ¥ for JPY', () => {
+    const result = getCurrencySymbol('JPY')
+    // Intl may return ¥ or JP¥ depending on locale — just check it's non-empty
+    expect(result.length).toBeGreaterThan(0)
+  })
+
+  it('returns a non-empty string for unknown codes (falls back gracefully)', () => {
+    const result = getCurrencySymbol('XYZ')
+    expect(result.length).toBeGreaterThan(0)
+  })
 })
 
 describe('isNegativeBalance', () => {

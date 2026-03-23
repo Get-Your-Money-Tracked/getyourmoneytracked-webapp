@@ -17,6 +17,8 @@ import type { TransactionType } from '@/types'
 
 const props = defineProps<{
   open: boolean
+  /** Pre-set transaction type when the sheet opens */
+  defaultType?: TransactionType
 }>()
 
 const emit = defineEmits<{
@@ -121,7 +123,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      transactionType.value = 'EXPENSE'
+      transactionType.value = props.defaultType ?? 'EXPENSE'
       amountString.value = '0'
       // Session memory: restore last-used account/category
       categoryId.value = transactionsStore.lastUsedCategoryId
@@ -251,6 +253,7 @@ const saveLabel = computed(() => {
       role="dialog"
       aria-modal="true"
       aria-label="Add Transaction"
+      data-testid="add-transaction-sheet"
       @touchstart="onTouchStart"
       @touchend="onTouchEnd"
     >

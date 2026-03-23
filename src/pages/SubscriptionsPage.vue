@@ -12,6 +12,8 @@ import SubscriptionItem from '@/components/subscriptions/SubscriptionItem.vue'
 import RecurringSummaryCard from '@/components/subscriptions/RecurringSummaryCard.vue'
 import AddSubscriptionSheet from '@/components/subscriptions/AddSubscriptionSheet.vue'
 import EditSubscriptionSheet from '@/components/subscriptions/EditSubscriptionSheet.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import PageTip from '@/components/common/PageTip.vue'
 
 const router = useRouter()
 const subscriptionsStore = useSubscriptionsStore()
@@ -91,6 +93,9 @@ function closeEdit() {
       </button>
     </div>
 
+    <!-- Page tip (new users only, dismissible) -->
+    <PageTip page-key="subscriptions" />
+
     <!-- Loading skeleton -->
     <div
       v-if="subscriptionsStore.isLoading"
@@ -118,27 +123,15 @@ function closeEdit() {
     </div>
 
     <!-- Empty state -->
-    <div
+    <EmptyState
       v-else-if="subscriptionsStore.subscriptions.length === 0"
-      class="mx-4 rounded-2xl bg-surface-muted p-8 text-center"
-      data-testid="empty-state"
-    >
-      <Bell :size="32" class="mx-auto text-text-muted" aria-hidden="true" />
-      <p class="mt-3 text-body font-semibold text-text-primary">No subscriptions yet.</p>
-      <p class="mt-1 text-caption text-text-secondary">
-        Add your recurring bills and income to see upcoming payments on your Dashboard.
-      </p>
-      <button
-        type="button"
-        class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white"
-        :style="{ backgroundColor: 'var(--color-primary)' }"
-        data-testid="empty-add-btn"
-        @click="openAdd"
-      >
-        <Plus :size="16" aria-hidden="true" />
-        Add Subscription
-      </button>
-    </div>
+      :icon="Bell"
+      title="No subscriptions yet."
+      description="Track subscriptions like Netflix, Spotify, or your gym. We'll show you upcoming bills."
+      action-label="Add Subscription"
+      action-test-id="empty-add-btn"
+      @action="openAdd"
+    />
 
     <!-- Content -->
     <template v-else>

@@ -1,12 +1,46 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from 'firebase/auth'
+import { ONBOARDING_COMPLETED_KEY, SIGNUP_TIMESTAMP_KEY } from '@/utils/constants'
+
+// localStorage key for persisting defaultCurrency between sessions
+const CURRENCY_KEY = 'gymt_default_currency'
+
+/** All localStorage keys that should be cleared on logout (so a new user gets a fresh experience) */
+const ONBOARDING_KEYS = [
+  ONBOARDING_COMPLETED_KEY,
+  SIGNUP_TIMESTAMP_KEY,
+  'tip_dismissed_dashboard',
+  'tip_dismissed_budgets',
+  'tip_dismissed_accounts',
+  'tip_dismissed_subscriptions',
+  'tip_dismissed_history',
+]
+
+function loadCurrencyFromStorage(): string {
+  try {
+    return localStorage.getItem(CURRENCY_KEY) ?? 'USD'
+  } catch {
+    return 'USD'
+  }
+}
+
+function saveCurrencyToStorage(currency: string): void {
+  try {
+    localStorage.setItem(CURRENCY_KEY, currency)
+  } catch {
+    // localStorage may be unavailable in some environments — ignore
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const isLoading = ref(true)
+  const isLoading = ref(true)       // true until initial onAuthStateChanged fires
+  const isSubmitting = ref(false)   // true during login/signup form submission
   const error = ref<string | null>(null)
   const defaultCurrency = ref<string>('USD')
+  /** Set to true after a successful signup — cleared once the onboarding redirect is consumed */
+  const isNewUser = ref(false)
 
   // ── Computed ───────────────────────────────────────────────
   const isAuthenticated = computed(() => user.value !== null)
@@ -59,17 +93,19 @@ export const useAuthStore = defineStore('auth', () => {
   // ── Actions ────────────────────────────────────────────────
   async function login(emailInput: string, password: string): Promise<void> {
     error.value = null
-    isLoading.value = true
+    isSubmitting.value = true
     try {
       const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth')
       await signInWithEmailAndPassword(getAuth(), emailInput, password)
+      // Load defaultCurrency from localStorage (saved during signup)
+      defaultCurrency.value = loadCurrencyFromStorage()
       // user is set via onAuthStateChanged in main.ts
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? ''
       error.value = mapFirebaseError(code)
       throw e
     } finally {
-      isLoading.value = false
+      isSubmitting.value = false
     }
   }
 
@@ -80,7 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
     currency: string,
   ): Promise<void> {
     error.value = null
-    isLoading.value = true
+    isSubmitting.value = true
     try {
       const { getAuth, createUserWithEmailAndPassword, updateProfile } = await import(
         'firebase/auth'
@@ -91,18 +127,27 @@ export const useAuthStore = defineStore('auth', () => {
       await updateProfile(credential.user, { displayName: displayNameInput })
 
       defaultCurrency.value = currency
+      saveCurrencyToStorage(currency)
+
+      // Save signup timestamp for 7-day tip cutoff (Story 12.3)
+      try {
+        localStorage.setItem(SIGNUP_TIMESTAMP_KEY, new Date().toISOString())
+      } catch {
+        // localStorage may be unavailable — ignore
+      }
 
       // Call initializeUser mutation — imported lazily to avoid circular deps
       const { callInitializeUser } = await import('@/graphql/mutations/auth')
       await callInitializeUser(displayNameInput, currency)
 
+      isNewUser.value = true
       setUser(credential.user)
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? ''
       error.value = mapFirebaseError(code)
       throw e
     } finally {
-      isLoading.value = false
+      isSubmitting.value = false
     }
   }
 
@@ -123,7 +168,18 @@ export const useAuthStore = defineStore('auth', () => {
     await signOut(getAuth())
     user.value = null
     error.value = null
+    isNewUser.value = false
     defaultCurrency.value = 'USD'
+    saveCurrencyToStorage('USD')
+
+    // Clear onboarding + tip keys so the next user on a shared device gets a fresh experience
+    try {
+      for (const key of ONBOARDING_KEYS) {
+        localStorage.removeItem(key)
+      }
+    } catch {
+      // localStorage may be unavailable — ignore
+    }
 
     // Reset all other stores to prevent stale data leaking between sessions
     try {
@@ -150,7 +206,9 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     isLoading,
+    isSubmitting,
     isAuthenticated,
+    isNewUser,
     displayName,
     email,
     initials,

@@ -121,6 +121,45 @@ describe('useAuthStore', () => {
     expect(store.error).toBeNull()
   })
 
+  // ── defaultCurrency localStorage sync ──────────────────────────────────────
+  it('saves defaultCurrency to localStorage on signup', async () => {
+    const user = makeFirebaseUser()
+    mockCreateUser.mockResolvedValueOnce({ user })
+    mockUpdateProfile.mockResolvedValueOnce(undefined)
+    mockCallInitializeUser.mockResolvedValueOnce(undefined)
+    const store = useAuthStore()
+    await store.signup('user@example.com', 'pass123', 'Test User', 'EUR')
+    expect(localStorage.getItem('gymt_default_currency')).toBe('EUR')
+  })
+
+  it('loads defaultCurrency from localStorage on login', async () => {
+    localStorage.setItem('gymt_default_currency', 'BRL')
+    const user = makeFirebaseUser()
+    mockSignIn.mockResolvedValueOnce({ user })
+    const store = useAuthStore()
+    await store.login('user@example.com', 'password123')
+    expect(store.defaultCurrency).toBe('BRL')
+  })
+
+  it('falls back to USD when localStorage has no currency on login', async () => {
+    localStorage.removeItem('gymt_default_currency')
+    const user = makeFirebaseUser()
+    mockSignIn.mockResolvedValueOnce({ user })
+    const store = useAuthStore()
+    await store.login('user@example.com', 'password123')
+    expect(store.defaultCurrency).toBe('USD')
+  })
+
+  it('resets defaultCurrency to USD and updates localStorage on logout', async () => {
+    localStorage.setItem('gymt_default_currency', 'EUR')
+    mockSignOut.mockResolvedValueOnce(undefined)
+    const store = useAuthStore()
+    store.setUser(makeFirebaseUser() as never)
+    await store.logout()
+    expect(store.defaultCurrency).toBe('USD')
+    expect(localStorage.getItem('gymt_default_currency')).toBe('USD')
+  })
+
   // ── computed helpers ────────────────────────────────────────────────────────
   it('derives initials from displayName', () => {
     const store = useAuthStore()

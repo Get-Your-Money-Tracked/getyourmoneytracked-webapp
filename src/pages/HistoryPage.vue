@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Calendar } from 'lucide-vue-next'
+import { CalendarDays } from 'lucide-vue-next'
 import type { MonthlySummary } from '@/types'
 import type { MonthlySortOption } from '@/graphql/queries/history'
 import { fetchMonthlySummaries } from '@/graphql/queries/history'
@@ -8,6 +8,8 @@ import { useAuthStore } from '@/stores/auth'
 import MonthSummaryRow from '@/components/history/MonthSummaryRow.vue'
 import MonthSummarySkeletonRow from '@/components/history/MonthSummarySkeletonRow.vue'
 import SortControls from '@/components/history/SortControls.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import PageTip from '@/components/common/PageTip.vue'
 
 const authStore = useAuthStore()
 
@@ -102,6 +104,9 @@ onUnmounted(() => {
       <h1 class="text-page-title font-bold text-text-primary">History</h1>
     </div>
 
+    <!-- Page tip (new users only, dismissible) -->
+    <PageTip page-key="history" />
+
     <!-- Sort controls -->
     <div class="px-4 mb-4" data-testid="sort-controls-wrapper">
       <SortControls :model-value="sort" @update:model-value="onSortChange" />
@@ -140,16 +145,13 @@ onUnmounted(() => {
     </div>
 
     <!-- Empty state -->
-    <div
+    <EmptyState
       v-else-if="!isLoading && !error"
-      class="mx-4 rounded-xl bg-surface-muted p-6 text-center"
+      :icon="CalendarDays"
+      title="No history yet"
+      description="Your monthly summaries will appear here as you log transactions."
       data-testid="empty-state"
-    >
-      <Calendar :size="32" class="mx-auto mb-3 text-text-muted" aria-hidden="true" />
-      <p class="text-body text-text-secondary">
-        No history yet. Start tracking your finances and your monthly history will appear here.
-      </p>
-    </div>
+    />
 
     <!-- Loading more indicator -->
     <div v-if="isLoading && summaries.length > 0" class="py-4 text-center" data-testid="loading-more">

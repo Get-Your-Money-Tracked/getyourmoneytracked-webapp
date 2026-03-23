@@ -7,6 +7,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { ONBOARDING_COMPLETED_KEY } from '@/utils/constants'
 import App from './App.vue'
 import '@/assets/main.css'
 
@@ -30,36 +31,76 @@ setOnUnauthorized(async () => {
 })
 
 // Route guard — protect authenticated routes
-// Note: while isLoading is true Firebase hasn't resolved yet — allow navigation
-// through so that App.vue shows the loader and the guard re-runs after resolution
 router.beforeEach((to) => {
   // While auth is still loading, let it pass — App.vue shows AppLoader
+  // The guard will re-run after auth resolves (see router.replace below)
   if (authStore.isLoading) {
     return true
   }
 
   const requiresAuth = to.meta.requiresAuth !== false
+  const isOnboardingRoute = to.name === 'onboarding'
+  const onboardingCompleted = (() => {
+    try { return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true' } catch { return false }
+  })()
 
   if (requiresAuth && !authStore.isAuthenticated) {
-    return { name: 'login' }
-  } else if (to.name === 'login' && authStore.isAuthenticated) {
+    // Preserve the intended destination for post-login redirect
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // Redirect returning users away from /onboarding (onboarding already done)
+  if (isOnboardingRoute && authStore.isAuthenticated && onboardingCompleted) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    // Reverse guard: logged-in users should not see the login page.
+    // Resolve the redirect query param if present; fall back to /dashboard.
+    const redirect = to.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return redirect
+    }
     return { name: 'dashboard' }
   }
   // implicitly returns undefined — navigation proceeds
 })
 
 // Wait for Firebase to resolve auth state before mounting the app.
-// onAuthStateChanged fires exactly once (then we unsubscribe) — this prevents
-// the flash-of-login-page for returning users.
-const unsubscribe = onAuthStateChanged(auth, (user) => {
+// Keep the listener alive so subsequent login/logout also update the store.
+let appMounted = false
+onAuthStateChanged(auth, (user) => {
   authStore.setUser(user)
-  unsubscribe()
 
-  // After auth resolves, re-run the route guard in case the initial navigation
-  // was allowed through while isLoading was still true.
-  router.replace(router.currentRoute.value.fullPath).catch(() => {
-    // ignore redundant navigation errors
-  })
+  if (!appMounted) {
+    appMounted = true
 
-  app.mount('#app')
+    // After auth resolves, re-run the route guard in case the initial navigation
+    // was allowed through while isLoading was still true.
+    router.replace(router.currentRoute.value.fullPath).catch(() => {
+      // ignore redundant navigation errors
+    })
+
+    app.mount('#app')
+  } else if (user && router.currentRoute.value.name === 'login') {
+    // User just logged in (onAuthStateChanged fired after signInWithEmailAndPassword).
+    // New users (isNewUser flag set by signup()) go to /onboarding; others go to /dashboard.
+    const onboardingCompleted = (() => {
+      try { return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true' } catch { return false }
+    })()
+
+    if (authStore.isNewUser && !onboardingCompleted) {
+      authStore.isNewUser = false
+      router.replace({ name: 'onboarding' }).catch(() => {})
+      return
+    }
+
+    // Redirect away from login page, respecting the redirect query param.
+    const redirect = router.currentRoute.value.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      router.replace(redirect).catch(() => {})
+    } else {
+      router.replace({ name: 'dashboard' }).catch(() => {})
+    }
+  }
 })

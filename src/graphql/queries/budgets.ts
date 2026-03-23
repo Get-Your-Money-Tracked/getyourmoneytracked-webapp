@@ -104,15 +104,23 @@ export interface UpdateBudgetInput {
 
 // ── Call functions ────────────────────────────────────────────────────────────
 
+/** Normalise "YYYY-MM" → "YYYY-MM-01" for the backend Date scalar. */
+function normalizeMonth(month: string | undefined | null): string | null {
+  if (!month) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(month)) return month
+  if (/^\d{4}-\d{2}$/.test(month)) return `${month}-01`
+  return month
+}
+
 export async function fetchBudgets(month?: string | null): Promise<Budget[]> {
-  const result = await urqlClient.query(BUDGETS_QUERY, { month: month ?? null }).toPromise()
+  const result = await urqlClient.query(BUDGETS_QUERY, { month: normalizeMonth(month) }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to fetch budgets.')
   const raw = (result.data?.budgets as Record<string, unknown>[]) ?? []
   return raw.map(parseBudgetMoney)
 }
 
 export async function callCreateBudget(input: CreateBudgetInput): Promise<Budget> {
-  const gqlInput = { ...input, amount: toMoney(input.amount) }
+  const gqlInput = { ...input, amount: toMoney(input.amount), month: normalizeMonth(input.month ?? null) }
   const result = await urqlClient.mutation(CREATE_BUDGET_MUTATION, { input: gqlInput }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to create budget.')
   if (!result.data?.createBudget) throw new Error('No data returned from createBudget.')

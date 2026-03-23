@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import type { Category } from '@/types'
 import { useBudgetsStore } from '@/stores/budgets'
+import { getCurrencySymbol } from '@/utils/currency'
 
 const props = defineProps<{
   open: boolean
@@ -16,6 +17,9 @@ const emit = defineEmits<{
 }>()
 
 const budgetsStore = useBudgetsStore()
+
+// ── Currency symbol ───────────────────────────────────────────
+const currencySymbol = computed(() => getCurrencySymbol(props.currency))
 
 // ── Form state ────────────────────────────────────────────────
 const selectedCategoryId = ref<string>('')
@@ -177,7 +181,7 @@ function onTouchEnd(e: TouchEvent) {
             class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
             :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary'"
           >
-            <span class="pl-4 pr-1 text-body text-text-muted">$</span>
+            <span class="pl-4 pr-1 text-body text-text-muted">{{ currencySymbol }}</span>
             <input
               id="create-budget-amount"
               v-model="amountInput"

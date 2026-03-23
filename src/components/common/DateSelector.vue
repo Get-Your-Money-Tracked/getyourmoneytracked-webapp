@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { CalendarDays } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -9,6 +9,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [date: string]
 }>()
+
+const dateInputRef = ref<HTMLInputElement | null>(null)
 
 const today = computed(() => {
   const d = new Date()
@@ -30,17 +32,34 @@ function onDateChange(e: Event) {
   const target = e.target as HTMLInputElement
   emit('update:modelValue', target.value)
 }
+
+function triggerDatePicker() {
+  if (!dateInputRef.value) return
+  if (typeof dateInputRef.value.showPicker === 'function') {
+    try {
+      dateInputRef.value.showPicker()
+    } catch {
+      dateInputRef.value.click()
+    }
+  } else {
+    dateInputRef.value.click()
+  }
+}
 </script>
 
 <template>
-  <div class="relative flex h-10 items-center gap-2 rounded-xl bg-surface-muted px-3">
+  <div
+    class="relative flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-surface-muted px-3"
+    @click="triggerDatePicker"
+  >
     <CalendarDays :size="16" class="shrink-0 text-text-muted" />
     <span class="text-body font-medium text-text-primary">{{ displayLabel }}</span>
     <!-- Native date input overlaid for tap interaction -->
     <input
+      ref="dateInputRef"
       type="date"
       :value="modelValue || today"
-      class="absolute inset-0 cursor-pointer opacity-0"
+      class="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10"
       aria-label="Select date"
       @change="onDateChange"
     />

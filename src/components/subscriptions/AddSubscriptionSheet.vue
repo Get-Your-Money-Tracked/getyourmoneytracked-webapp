@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import type { Category, Account } from '@/types'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
+import { getCurrencySymbol } from '@/utils/currency'
 
 const props = defineProps<{
   open: boolean
@@ -17,6 +18,9 @@ const emit = defineEmits<{
 }>()
 
 const subscriptionsStore = useSubscriptionsStore()
+
+// ── Currency symbol ───────────────────────────────────────────
+const currencySymbol = computed(() => getCurrencySymbol(props.currency))
 
 // ── Form state ────────────────────────────────────────────────
 const nameInput = ref<string>('')
@@ -251,7 +255,7 @@ function onTouchEnd(e: TouchEvent) {
             class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
             :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary'"
           >
-            <span class="pl-4 pr-1 text-body text-text-muted">$</span>
+            <span class="pl-4 pr-1 text-body text-text-muted">{{ currencySymbol }}</span>
             <input
               id="add-sub-amount"
               v-model="amountInput"

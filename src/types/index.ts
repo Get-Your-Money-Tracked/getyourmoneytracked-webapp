@@ -76,6 +76,8 @@ export interface BudgetProgress {
 export interface UpcomingBill {
   id: string
   name: string
+  /** 'EXPENSE' | 'INCOME' — income items are styled in green */
+  type: TransactionType
   amount: number
   currency: string
   categoryId: string | null
@@ -83,6 +85,8 @@ export interface UpcomingBill {
   frequency: Frequency
   nextDueDate: string | null
   isActive: boolean
+  /** When true, this item will prompt for logging when overdue */
+  autoLog: boolean
 }
 
 export interface SubscriptionEntry {
@@ -134,4 +138,14 @@ export interface Dashboard {
   recentTransactions: Transaction[]
   upcomingBills: UpcomingBill[]
   budgetProgress: BudgetProgress[]
+}
+
+export interface Goal {
+  id: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+  targetDate: string | null
+  icon: string | null
+  createdAt: string
 }

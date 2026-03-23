@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AppLoader from '@/components/common/AppLoader.vue'
-import FAB from '@/components/common/FAB.vue'
 import BottomNav from '@/components/layout/BottomNav.vue'
 import Toast from '@/components/common/Toast.vue'
 import AddTransactionSheet from '@/components/transactions/AddTransactionSheet.vue'
@@ -14,9 +13,17 @@ const authStore = useAuthStore()
 // Show the full-screen loader while Firebase resolves auth state (prevents flash of login)
 const showLoader = computed(() => authStore.isLoading)
 
-// Only show AppShell (bottom nav + FAB) for authenticated routes
+// Only show AppShell (bottom nav + FAB) for authenticated routes that are NOT the onboarding page
 const isAuthRoute = computed(
-  () => route.meta.requiresAuth !== false && authStore.isAuthenticated,
+  () =>
+    route.meta.requiresAuth !== false &&
+    !route.meta.isOnboarding &&
+    authStore.isAuthenticated,
+)
+
+// Show onboarding page without bottom nav (full-screen standalone experience)
+const isOnboardingRoute = computed(
+  () => route.meta.isOnboarding === true && authStore.isAuthenticated,
 )
 
 const showAddTransaction = ref(false)
@@ -35,13 +42,19 @@ const showAddTransaction = ref(false)
       <main class="pb-20" data-testid="app-shell">
         <RouterView />
       </main>
-      <FAB data-testid="fab" @click="showAddTransaction = true" />
-      <BottomNav />
+      <BottomNav @add-transaction="showAddTransaction = true" />
       <AddTransactionSheet
         :open="showAddTransaction"
         @close="showAddTransaction = false"
         @created="showAddTransaction = false"
       />
+    </template>
+
+    <!-- Onboarding layout (no BottomNav, no FAB) -->
+    <template v-else-if="isOnboardingRoute">
+      <main data-testid="onboarding-view">
+        <RouterView />
+      </main>
     </template>
 
     <!-- Unauthenticated layout (login page) -->

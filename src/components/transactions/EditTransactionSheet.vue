@@ -325,6 +325,7 @@ const deleteDescriptionText = computed(() => {
       role="dialog"
       aria-modal="true"
       aria-label="Edit Transaction"
+      data-testid="edit-transaction-sheet"
       @touchstart="onTouchStart"
       @touchend="onTouchEnd"
     >

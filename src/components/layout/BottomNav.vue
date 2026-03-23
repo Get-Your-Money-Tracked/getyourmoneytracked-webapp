@@ -4,21 +4,30 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Home,
   CalendarClock,
-  Target,
+  BarChart3,
   MoreHorizontal,
   Wallet,
   Settings,
+  Plus,
+  Search,
+  Target,
+  PiggyBank,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
+
+const emit = defineEmits<{
+  'add-transaction': []
+}>()
 
 // ── Active tab detection ──────────────────────────────────────
 const activeTab = computed(() => {
   const path = route.path
   if (path.startsWith('/history')) return '/history'
   if (path.startsWith('/dashboard')) return '/dashboard'
-  if (path.startsWith('/budgets')) return '/budgets'
+  if (path.startsWith('/reports')) return '/reports'
+  if (path.startsWith('/search')) return '/search'
   return path
 })
 
@@ -59,6 +68,42 @@ function navigateTo(path: string) {
       aria-label="More options"
       data-testid="more-menu"
     >
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/search') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-search-btn"
+        @click="navigateTo('/search')"
+      >
+        <Search :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Search</span>
+      </button>
+      <div class="border-t border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/budgets') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-budgets-btn"
+        @click="navigateTo('/budgets')"
+      >
+        <Target :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Budgets</span>
+      </button>
+      <div class="border-t border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/goals') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-goals-btn"
+        @click="navigateTo('/goals')"
+      >
+        <PiggyBank :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Goals</span>
+      </button>
+      <div class="border-t border-border" />
       <button
         type="button"
         role="menuitem"
@@ -117,26 +162,36 @@ function navigateTo(path: string) {
         <span class="text-badge font-medium leading-tight">History</span>
       </RouterLink>
 
-      <!-- Center FAB placeholder (empty space) -->
-      <div class="flex-1" aria-hidden="true" />
+      <!-- Center "+" button — integrated FAB -->
+      <div class="relative flex flex-1 items-center justify-center">
+        <button
+          type="button"
+          aria-label="Add transaction"
+          class="-translate-y-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-surface transition-transform duration-100 active:scale-95 active:bg-primary-hover dark:ring-slate-900"
+          data-testid="nav-add-transaction"
+          @click="emit('add-transaction')"
+        >
+          <Plus :size="28" :stroke-width="2.5" />
+        </button>
+      </div>
 
-      <!-- Budgets -->
+      <!-- Reports -->
       <RouterLink
-        to="/budgets"
+        to="/reports"
         class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-center transition-colors duration-150"
-        :class="activeTab === '/budgets' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'"
-        :aria-current="activeTab === '/budgets' ? 'page' : undefined"
-        data-testid="nav-budgets"
+        :class="activeTab === '/reports' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'"
+        :aria-current="activeTab === '/reports' ? 'page' : undefined"
+        data-testid="nav-reports"
       >
-        <Target class="h-5 w-5" :stroke-width="activeTab === '/budgets' ? 2.5 : 2" />
-        <span class="text-badge font-medium leading-tight">Budgets</span>
+        <BarChart3 class="h-5 w-5" :stroke-width="activeTab === '/reports' ? 2.5 : 2" />
+        <span class="text-badge font-medium leading-tight">Reports</span>
       </RouterLink>
 
       <!-- More -->
       <button
         type="button"
         class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-center transition-colors duration-150"
-        :class="(route.path.startsWith('/accounts') || route.path.startsWith('/settings') || showMore)
+        :class="(route.path.startsWith('/accounts') || route.path.startsWith('/settings') || route.path.startsWith('/search') || route.path.startsWith('/tags') || route.path.startsWith('/budgets') || route.path.startsWith('/goals') || showMore)
           ? 'text-primary'
           : 'text-text-muted hover:text-text-secondary'"
         :aria-expanded="showMore"

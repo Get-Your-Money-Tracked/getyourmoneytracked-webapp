@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2, DollarSign } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
@@ -8,11 +7,10 @@ import { useAuthStore } from '@/stores/auth'
 type Mode = 'login' | 'signup' | 'forgot'
 const mode = ref<Mode>('login')
 
-const router = useRouter()
 const authStore = useAuthStore()
 const { login, signup, sendPasswordReset, clearError } = authStore
 const error = computed(() => authStore.error)
-const isLoading = computed(() => authStore.isLoading)
+const isLoading = computed(() => authStore.isSubmitting)
 
 // ── Form fields ───────────────────────────────────────────────────────────────
 const email = ref('')
@@ -89,13 +87,14 @@ watch(mode, () => {
 })
 
 // ── Submit handlers ───────────────────────────────────────────────────────────
+
 async function handleLogin() {
   const v1 = validateEmail(email.value)
   const v2 = validatePassword(password.value)
   if (!v1 || !v2) return
   try {
     await login(email.value, password.value)
-    router.push({ name: 'dashboard' })
+    // Navigation handled by the isAuthenticated watcher above
   } catch {
     // error already set in store
   }
@@ -109,7 +108,7 @@ async function handleSignup() {
   if (!v1 || !v2 || !v3 || !v4) return
   try {
     await signup(email.value, password.value, displayName.value.trim(), currency.value)
-    router.push({ name: 'dashboard' })
+    // Navigation handled by the isAuthenticated watcher above
   } catch {
     // error already set in store
   }

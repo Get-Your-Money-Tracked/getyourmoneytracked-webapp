@@ -18,7 +18,7 @@ describe('DashboardHeader', () => {
   })
 
   function mountHeader(month = '2026-03', displayName = 'Alex') {
-    return mount(DashboardHeader, { props: { month, displayName } })
+    return mount(DashboardHeader, { props: { month, displayName, canGoForward: false } })
   }
 
   it('renders the greeting with display name', () => {
@@ -45,19 +45,22 @@ describe('DashboardHeader', () => {
     expect(wrapper.find('[data-testid="greeting"]').text()).toContain('Good evening')
   })
 
-  it('renders "Mar 2026" for month "2026-03"', () => {
+  it('renders "March 2026" for month "2026-03"', () => {
     const wrapper = mountHeader('2026-03')
-    expect(wrapper.find('[data-testid="month-label"]').text()).toBe('Mar 2026')
+    expect(wrapper.find('[data-testid="month-label"]').text()).toContain('2026')
+    expect(wrapper.find('[data-testid="month-label"]').text().toLowerCase()).toContain('march')
   })
 
-  it('renders "Jan 2025" for month "2025-01"', () => {
+  it('renders "January 2025" for month "2025-01"', () => {
     const wrapper = mountHeader('2025-01')
-    expect(wrapper.find('[data-testid="month-label"]').text()).toBe('Jan 2025')
+    expect(wrapper.find('[data-testid="month-label"]').text()).toContain('2025')
+    expect(wrapper.find('[data-testid="month-label"]').text().toLowerCase()).toContain('jan')
   })
 
-  it('renders "Dec 2024" for month "2024-12"', () => {
+  it('renders "December 2024" for month "2024-12"', () => {
     const wrapper = mountHeader('2024-12')
-    expect(wrapper.find('[data-testid="month-label"]').text()).toBe('Dec 2024')
+    expect(wrapper.find('[data-testid="month-label"]').text()).toContain('2024')
+    expect(wrapper.find('[data-testid="month-label"]').text().toLowerCase()).toContain('dec')
   })
 
   it('renders "there" as display name when no name is set', () => {

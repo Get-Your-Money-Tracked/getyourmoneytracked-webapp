@@ -13,6 +13,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/onboarding',
+    name: 'onboarding',
+    component: () => import('@/pages/OnboardingPage.vue'),
+    meta: { requiresAuth: true, isOnboarding: true },
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/pages/DashboardPage.vue'),
@@ -52,6 +58,30 @@ const routes: RouteRecordRaw[] = [
     path: '/subscriptions',
     name: 'subscriptions',
     component: () => import('@/pages/SubscriptionsPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('@/pages/SearchPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/reports',
+    name: 'reports',
+    component: () => import('@/pages/ReportsPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/tags',
+    name: 'tags',
+    component: () => import('@/pages/ManageTagsPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/goals',
+    name: 'goals',
+    component: () => import('@/pages/GoalsPage.vue'),
     meta: { requiresAuth: true },
   },
   {
