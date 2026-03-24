@@ -26,6 +26,9 @@ function createTestRouter(initialRoute = '/dashboard') {
       { path: '/reports', component: { template: '<div />' } },
       { path: '/budgets', component: { template: '<div />' } },
       { path: '/accounts', component: { template: '<div />' } },
+      { path: '/subscriptions', component: { template: '<div />' } },
+      { path: '/categories', component: { template: '<div />' } },
+      { path: '/tags', component: { template: '<div />' } },
       { path: '/settings', component: { template: '<div />' } },
     ],
   })
@@ -226,6 +229,45 @@ describe('BottomNav', () => {
 
   it('More button is highlighted when on /budgets', async () => {
     const wrapper = await mountNav('/budgets')
+    expect(wrapper.find('[data-testid="nav-more"]').classes()).toContain('text-primary')
+  })
+
+  it('More menu contains Recurring link', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-more"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-recurring-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="more-recurring-btn"]').text()).toContain('Recurring')
+  })
+
+  it('More menu contains Categories link', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-more"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-categories-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="more-categories-btn"]').text()).toContain('Categories')
+  })
+
+  it('More menu contains Tags link', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-more"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-tags-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="more-tags-btn"]').text()).toContain('Tags')
+  })
+
+  it('More button is highlighted when on /subscriptions', async () => {
+    const wrapper = await mountNav('/subscriptions')
+    expect(wrapper.find('[data-testid="nav-more"]').classes()).toContain('text-primary')
+  })
+
+  it('More button is highlighted when on /categories', async () => {
+    const wrapper = await mountNav('/categories')
+    expect(wrapper.find('[data-testid="nav-more"]').classes()).toContain('text-primary')
+  })
+
+  it('More button is highlighted when on /tags', async () => {
+    const wrapper = await mountNav('/tags')
     expect(wrapper.find('[data-testid="nav-more"]').classes()).toContain('text-primary')
   })
 })

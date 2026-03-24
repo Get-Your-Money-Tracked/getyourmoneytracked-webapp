@@ -54,16 +54,16 @@ function closeEdit() {
 <template>
   <div class="min-h-screen pb-24 md:pb-0">
     <div class="mx-auto max-w-md md:max-w-4xl px-4">
-      <!-- Back to Settings -->
+      <!-- Back navigation -->
       <div class="flex items-center gap-1 pb-1 pt-4">
         <button
           type="button"
           class="flex items-center gap-1 text-caption font-medium text-text-primary"
           data-testid="back-btn"
-          @click="router.push('/settings')"
+          @click="router.back()"
         >
           <ArrowLeft :size="20" aria-hidden="true" />
-          Settings
+          Back
         </button>
       </div>
 

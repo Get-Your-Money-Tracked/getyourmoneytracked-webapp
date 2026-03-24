@@ -79,9 +79,11 @@ let appMounted = false
 onAuthStateChanged(auth, async (user) => {
   authStore.setUser(user)
 
-  // Hydrate currency + display name from API for existing users
+  // Hydrate currency + display name from API for existing users.
+  // We must await this before navigating to the dashboard so that
+  // the backend user lookup succeeds and the token is cached.
   if (user && !authStore.isNewUser) {
-    authStore.hydrateFromApi().catch(() => {
+    await authStore.hydrateFromApi().catch(() => {
       // Silently fall back to localStorage if API is unreachable
     })
   }

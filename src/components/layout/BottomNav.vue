@@ -12,6 +12,9 @@ import {
   Search,
   Target,
   PiggyBank,
+  Bell,
+  FolderOpen,
+  Tag,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -62,7 +65,7 @@ function navigateTo(path: string) {
   <Transition name="more-menu">
     <div
       v-if="showMore"
-      class="fixed right-2 z-40 min-w-[180px] overflow-hidden rounded-xl bg-surface py-1"
+      class="fixed right-2 z-40 min-w-[180px] max-h-[calc(100vh-80px)] overflow-y-auto overflow-x-hidden rounded-xl bg-surface py-1"
       :style="{ bottom: '68px', boxShadow: 'var(--shadow-dropdown)' }"
       role="menu"
       aria-label="More options"
@@ -114,6 +117,42 @@ function navigateTo(path: string) {
       >
         <Wallet :size="20" class="flex-shrink-0 text-text-secondary" />
         <span class="text-body">Accounts</span>
+      </button>
+      <div class="border-t border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/subscriptions') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-recurring-btn"
+        @click="navigateTo('/subscriptions')"
+      >
+        <Bell :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Recurring</span>
+      </button>
+      <div class="border-t border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/categories') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-categories-btn"
+        @click="navigateTo('/categories')"
+      >
+        <FolderOpen :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Categories</span>
+      </button>
+      <div class="border-t border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted"
+        :class="route.path.startsWith('/tags') ? 'text-primary font-medium' : 'text-text-primary'"
+        data-testid="more-tags-btn"
+        @click="navigateTo('/tags')"
+      >
+        <Tag :size="20" class="flex-shrink-0 text-text-secondary" />
+        <span class="text-body">Tags</span>
       </button>
       <div class="border-t border-border" />
       <button
@@ -191,7 +230,7 @@ function navigateTo(path: string) {
       <button
         type="button"
         class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-center transition-colors duration-150"
-        :class="(route.path.startsWith('/accounts') || route.path.startsWith('/settings') || route.path.startsWith('/search') || route.path.startsWith('/tags') || route.path.startsWith('/budgets') || route.path.startsWith('/goals') || showMore)
+        :class="(route.path.startsWith('/accounts') || route.path.startsWith('/settings') || route.path.startsWith('/search') || route.path.startsWith('/tags') || route.path.startsWith('/budgets') || route.path.startsWith('/goals') || route.path.startsWith('/subscriptions') || route.path.startsWith('/categories') || showMore)
           ? 'text-primary'
           : 'text-text-muted hover:text-text-secondary'"
         :aria-expanded="showMore"

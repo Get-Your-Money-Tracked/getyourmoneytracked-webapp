@@ -183,10 +183,10 @@ describe('SubscriptionsPage', () => {
     expect(wrapper.find('[data-testid="add-subscription-btn"]').exists()).toBe(true)
   })
 
-  it('renders back to Settings link', () => {
+  it('renders back navigation button', () => {
     _mockIsLoading.value = false
     const wrapper = mountPage()
-    expect(wrapper.find('[data-testid="back-to-settings-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="back-btn"]').exists()).toBe(true)
   })
 
   it('calls loadSubscriptions on mount', async () => {
