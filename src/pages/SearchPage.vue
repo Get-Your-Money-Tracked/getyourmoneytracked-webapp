@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { Search } from 'lucide-vue-next'
 import { useSearch, type SearchFilters } from '@/composables/useSearch'
 import { useAccountsStore } from '@/stores/accounts'
@@ -20,14 +20,12 @@ const {
   filters,
   results,
   isLoading,
-  hasMore,
   error,
   activeFilterCount,
   onSearchTextChange,
   applyFilters,
   removeFilter,
   loadMore,
-  search,
 } = useSearch()
 
 const showFilterSheet = ref(false)

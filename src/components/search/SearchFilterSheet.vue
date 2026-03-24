@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { X } from 'lucide-vue-next'
 import type { SearchFilters } from '@/composables/useSearch'
 import { createEmptyFilters } from '@/composables/useSearch'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'

@@ -70,19 +70,24 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = computed(() => ({
-  ...baseOptions.value,
-  plugins: {
-    ...baseOptions.value.plugins,
-    tooltip: {
-      ...(baseOptions.value.plugins as Record<string, unknown>)?.tooltip,
-      callbacks: {
-        label: (ctx: { dataset: { label: string }; parsed: { y: number } }) =>
-          `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+const chartOptions = computed(() => {
+  const base = baseOptions.value
+  const plugins = base.plugins ?? {}
+  const tooltip = (plugins as Record<string, unknown>)?.tooltip ?? {}
+  return {
+    ...base,
+    plugins: {
+      ...plugins,
+      tooltip: {
+        ...(tooltip as Record<string, unknown>),
+        callbacks: {
+          label: (ctx: { dataset: { label: string }; parsed: { y: number } }) =>
+            `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+        },
       },
     },
-  },
-}))
+  }
+})
 </script>
 
 <template>
@@ -110,7 +115,7 @@ const chartOptions = computed(() => ({
       <p class="text-caption text-muted">No data for this period</p>
     </div>
     <div v-else class="h-[200px] md:h-[280px]" data-testid="spending-trends-canvas-wrapper">
-      <Line :data="chartData" :options="chartOptions" />
+      <Line :data="chartData" :options="(chartOptions as any)" />
     </div>
   </div>
 </template>

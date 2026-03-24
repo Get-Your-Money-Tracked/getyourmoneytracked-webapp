@@ -13,6 +13,7 @@ function makeBill(overrides: Partial<UpcomingBill> = {}): UpcomingBill {
   return {
     id: 'bill-1',
     name: 'Netflix',
+    type: 'EXPENSE' as const,
     amount: 15.99,
     currency: 'USD',
     categoryId: null,
@@ -20,6 +21,7 @@ function makeBill(overrides: Partial<UpcomingBill> = {}): UpcomingBill {
     frequency: 'MONTHLY',
     nextDueDate: '2026-03-25',
     isActive: true,
+    autoLog: false,
     ...overrides,
   }
 }

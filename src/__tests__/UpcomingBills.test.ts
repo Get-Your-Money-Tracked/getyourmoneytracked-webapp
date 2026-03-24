@@ -13,6 +13,7 @@ function makeBill(id: string, name: string, dueDate: string): UpcomingBill {
   return {
     id,
     name,
+    type: 'EXPENSE' as const,
     amount: 15.99,
     currency: 'USD',
     categoryId: null,
@@ -20,6 +21,7 @@ function makeBill(id: string, name: string, dueDate: string): UpcomingBill {
     frequency: 'MONTHLY',
     nextDueDate: dueDate,
     isActive: true,
+    autoLog: false,
   }
 }
 

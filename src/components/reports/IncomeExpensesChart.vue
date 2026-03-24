@@ -70,7 +70,7 @@ const chartOptions = computed(() => ({
       },
     },
   },
-}))
+} as const))
 </script>
 
 <template>
@@ -85,7 +85,7 @@ const chartOptions = computed(() => ({
       <p class="text-caption text-muted">No data for this period</p>
     </div>
     <div v-else class="h-[200px] md:h-[280px]" data-testid="income-expenses-canvas-wrapper">
-      <Bar :data="chartData" :options="chartOptions" />
+      <Bar :data="chartData" :options="(chartOptions as any)" />
     </div>
   </div>
 </template>

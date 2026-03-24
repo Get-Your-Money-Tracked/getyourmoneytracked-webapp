@@ -34,8 +34,8 @@ vi.mock('@/graphql/queries/tags', () => ({
     if (_mockTagsError.value) throw new Error(_mockTagsError.value)
     return _mockTags.value
   }),
-  callRenameTag: vi.fn(async (oldName: string, newName: string) => _mockRenameTag(oldName, newName)),
-  callDeleteTag: vi.fn(async (name: string) => _mockDeleteTag(name)),
+  callRenameTag: vi.fn(async () => _mockRenameTag()),
+  callDeleteTag: vi.fn(async () => _mockDeleteTag()),
 }))
 
 // ── Toast mock ──────────────────────────────────────────────────────────────

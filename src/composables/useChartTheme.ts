@@ -24,7 +24,8 @@ export function useChartTheme() {
    */
   const baseOptions = computed<ChartOptions>(() => {
     // Touch isDark so Vue tracks the dependency.
-    const _isDark = themeStore.isDark // eslint-disable-line @typescript-eslint/no-unused-vars
+    // Touch isDark so Vue tracks the dependency and re-computes on theme change.
+    void themeStore.isDark
 
     const textSecondary = cssVar('--color-text-secondary') || (themeStore.isDark ? '#94a3b8' : '#64748b')
     const border = cssVar('--color-border') || (themeStore.isDark ? '#334155' : '#e2e8f0')

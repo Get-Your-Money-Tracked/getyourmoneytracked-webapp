@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { BarChart3 } from 'lucide-vue-next'
 import TimeRangeSelector from '@/components/reports/TimeRangeSelector.vue'
 import CustomDateRangeSheet from '@/components/reports/CustomDateRangeSheet.vue'
