@@ -85,7 +85,7 @@ const extraTagCount = computed(() =>
 <template>
   <button
     type="button"
-    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted active:bg-surface-muted"
+    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:bg-surface-muted active:scale-[0.98]"
     @click="emit('select', transaction)"
   >
     <!-- Left: color dot + icon -->

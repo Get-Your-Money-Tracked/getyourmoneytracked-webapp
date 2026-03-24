@@ -5,14 +5,16 @@ import { useTransactionsStore } from '@/stores/transactions'
 import { useAccountsStore } from '@/stores/accounts'
 import { useCategoriesStore } from '@/stores/categories'
 import { useAuthStore } from '@/stores/auth'
-import { parseTags, validateTags } from '@/utils/tags'
 import { useToastStore } from '@/stores/toast'
+import { callUsedTags } from '@/graphql/queries/tags'
 import NumPad from '@/components/common/NumPad.vue'
 import AmountDisplay from '@/components/common/AmountDisplay.vue'
 import TransactionTypeToggle from '@/components/common/TransactionTypeToggle.vue'
 import AccountSelector from '@/components/common/AccountSelector.vue'
 import DateSelector from '@/components/common/DateSelector.vue'
 import CategoryPicker from '@/components/common/CategoryPicker.vue'
+import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
+import TagInput from '@/components/common/TagInput.vue'
 import type { TransactionType } from '@/types'
 
 const props = defineProps<{
@@ -41,12 +43,12 @@ const toAccountId = ref<string | null>(null)
 const selectedDate = ref(todayIso())
 const description = ref('')
 const notes = ref('')
-const tagsInput = ref('')
+const tags = ref<string[]>([])
+const availableTags = ref<string[]>([])
 const showMoreDetails = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
 const showDiscardDialog = ref(false)
-const tagsError = ref<string | null>(null)
 
 // ── Helpers ───────────────────────────────────────────────────
 function todayIso(): string {
@@ -135,31 +137,18 @@ watch(
       selectedDate.value = todayIso()
       description.value = ''
       notes.value = ''
-      tagsInput.value = ''
+      tags.value = []
       showMoreDetails.value = false
       submitError.value = null
-      tagsError.value = null
       showDiscardDialog.value = false
       // Load data if not already loaded
       if (accountsStore.accounts.length === 0) accountsStore.loadAccounts()
       if (categoriesStore.categories.length === 0) categoriesStore.loadCategories()
+      // Load available tags for autocomplete
+      callUsedTags().then((t) => { availableTags.value = t }).catch(() => {})
     }
   },
 )
-
-// ── Swipe-to-dismiss ──────────────────────────────────────────
-let touchStartY = 0
-
-function onTouchStart(e: TouchEvent) {
-  touchStartY = e.touches[0].clientY
-}
-
-function onTouchEnd(e: TouchEvent) {
-  const delta = e.changedTouches[0].clientY - touchStartY
-  if (delta > 80) {
-    handleDismiss()
-  }
-}
 
 function handleDismiss() {
   if (isDirty.value) {
@@ -182,15 +171,6 @@ function cancelDiscard() {
 async function handleSubmit() {
   if (isSaveDisabled.value) return
 
-  // Validate tags
-  const parsedTags = parseTags(tagsInput.value)
-  const tagValidationError = validateTags(parsedTags)
-  if (tagValidationError) {
-    tagsError.value = tagValidationError
-    return
-  }
-  tagsError.value = null
-
   isSubmitting.value = true
   submitError.value = null
 
@@ -204,7 +184,7 @@ async function handleSubmit() {
       categoryId: transactionType.value !== 'TRANSFER' ? categoryId.value : null,
       description: description.value.trim() || null,
       notes: notes.value.trim() || null,
-      tags: parsedTags,
+      tags: tags.value,
     })
     const typeLabel =
       transactionType.value === 'EXPENSE'
@@ -234,166 +214,141 @@ const saveLabel = computed(() => {
 </script>
 
 <template>
-  <!-- Backdrop -->
-  <Transition name="backdrop">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 bg-black/40"
-      aria-hidden="true"
-      @click="handleDismiss"
-    />
-  </Transition>
-
-  <!-- Sheet -->
-  <Transition name="sheet">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
-      :style="{ boxShadow: 'var(--shadow-sheet)' }"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add Transaction"
-      data-testid="add-transaction-sheet"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
-    >
-      <!-- Drag handle -->
-      <div class="flex justify-center pb-2 pt-3">
-        <div class="h-1 w-8 rounded-full bg-border" aria-hidden="true" />
+  <ResponsiveSheet
+    :open="open"
+    title="Add Transaction"
+    test-id="add-transaction-sheet"
+    @close="handleDismiss"
+  >
+    <div class="px-5 pb-4 pt-1">
+      <!-- Transaction Type Toggle -->
+      <div class="mb-3">
+        <TransactionTypeToggle v-model="transactionType" />
       </div>
 
-      <div class="px-5 pb-4 pt-1">
-        <!-- Transaction Type Toggle -->
-        <div class="mb-3">
-          <TransactionTypeToggle v-model="transactionType" />
-        </div>
+      <!-- Amount Display -->
+      <AmountDisplay
+        :amount="amountString"
+        :currency="currency"
+        :transaction-type="transactionType"
+      />
 
-        <!-- Amount Display -->
-        <AmountDisplay
-          :amount="amountString"
-          :currency="currency"
-          :transaction-type="transactionType"
-        />
+      <!-- Category Picker (hidden for Transfer) -->
+      <div v-if="transactionType !== 'TRANSFER'" class="mb-3">
+        <CategoryPicker v-model="categoryId" :transaction-type="transactionType" />
+      </div>
 
-        <!-- Category Picker (hidden for Transfer) -->
-        <div v-if="transactionType !== 'TRANSFER'" class="mb-3">
-          <CategoryPicker v-model="categoryId" :transaction-type="transactionType" />
-        </div>
-
-        <!-- Account + Date row -->
-        <div class="mb-3 flex gap-2">
-          <template v-if="transactionType === 'TRANSFER'">
-            <!-- From account -->
-            <div class="flex-1">
-              <AccountSelector
-                :model-value="accountId"
-                :accounts="activeAccounts"
-                label="From"
-                @update:model-value="accountId = $event"
-              />
-            </div>
-            <!-- Arrow -->
-            <div class="flex items-end pb-1 text-text-muted">→</div>
-            <!-- To account -->
-            <div class="flex-1">
-              <AccountSelector
-                :model-value="toAccountId"
-                :accounts="activeAccounts"
-                label="To"
-                @update:model-value="toAccountId = $event"
-              />
-            </div>
-          </template>
-          <template v-else>
+      <!-- Account + Date row -->
+      <div class="mb-3 flex gap-2">
+        <template v-if="transactionType === 'TRANSFER'">
+          <!-- From account -->
+          <div class="flex-1">
             <AccountSelector
               :model-value="accountId"
               :accounts="activeAccounts"
+              label="From"
               @update:model-value="accountId = $event"
             />
-          </template>
-
-          <DateSelector v-model="selectedDate" />
-        </div>
-
-        <!-- More details toggle -->
-        <button
-          type="button"
-          class="text-caption mb-2 flex items-center gap-1 text-text-secondary"
-          @click="showMoreDetails = !showMoreDetails"
-        >
-          <span>{{ showMoreDetails ? '▾' : '▸' }}</span>
-          <span>More details</span>
-        </button>
-
-        <!-- More details section -->
-        <Transition name="expand">
-          <div v-if="showMoreDetails" class="mb-3 space-y-2">
-            <!-- Description -->
-            <input
-              v-model="description"
-              type="text"
-              placeholder="Description"
-              maxlength="255"
-              class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <!-- Notes -->
-            <textarea
-              v-model="notes"
-              placeholder="Notes"
-              maxlength="1000"
-              rows="2"
-              class="w-full resize-none rounded-xl border border-border bg-surface-muted px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <!-- Tags -->
-            <div>
-              <input
-                v-model="tagsInput"
-                type="text"
-                placeholder="Tags (e.g. vacation, food)"
-                class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                :class="{ 'border-danger ring-2 ring-danger/20': tagsError }"
-              />
-              <p v-if="tagsError" class="text-caption mt-1 text-danger">{{ tagsError }}</p>
-            </div>
           </div>
-        </Transition>
-
-        <!-- NumPad -->
-        <div class="mb-3">
-          <NumPad
-            @digit="handleDigit"
-            @decimal="handleDecimal"
-            @backspace="handleBackspace"
+          <!-- Arrow -->
+          <div class="flex items-end pb-1 text-text-muted">→</div>
+          <!-- To account -->
+          <div class="flex-1">
+            <AccountSelector
+              :model-value="toAccountId"
+              :accounts="activeAccounts"
+              label="To"
+              @update:model-value="toAccountId = $event"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <AccountSelector
+            :model-value="accountId"
+            :accounts="activeAccounts"
+            @update:model-value="accountId = $event"
           />
-        </div>
+        </template>
 
-        <!-- Error message -->
-        <div
-          v-if="submitError"
-          class="text-body mb-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger"
-          role="alert"
-        >
-          {{ submitError }}
-        </div>
-
-        <!-- Save button -->
-        <button
-          type="button"
-          class="flex h-12 w-full items-center justify-center rounded-xl font-semibold text-white transition-opacity duration-150"
-          :style="{ backgroundColor: saveButtonColor }"
-          :disabled="isSaveDisabled"
-          :class="{ 'cursor-not-allowed opacity-50': isSaveDisabled }"
-          @click="handleSubmit"
-        >
-          <span v-if="isSubmitting" class="flex items-center gap-2">
-            <Loader2 :size="18" class="animate-spin" />
-            Saving…
-          </span>
-          <span v-else>{{ saveLabel }}</span>
-        </button>
+        <DateSelector v-model="selectedDate" />
       </div>
+
+      <!-- More details toggle -->
+      <button
+        type="button"
+        class="text-caption mb-2 flex items-center gap-1 text-text-secondary"
+        @click="showMoreDetails = !showMoreDetails"
+      >
+        <span>{{ showMoreDetails ? '▾' : '▸' }}</span>
+        <span>More details</span>
+      </button>
+
+      <!-- More details section -->
+      <Transition name="expand">
+        <div v-if="showMoreDetails" class="mb-3 space-y-2">
+          <!-- Description -->
+          <input
+            v-model="description"
+            type="text"
+            placeholder="Description"
+            maxlength="255"
+            class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <!-- Notes -->
+          <textarea
+            v-model="notes"
+            placeholder="Notes"
+            maxlength="1000"
+            rows="2"
+            class="w-full resize-none rounded-xl border border-border bg-surface-muted px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <!-- Tags -->
+          <div>
+            <p class="text-caption text-text-secondary mb-1.5">Tags</p>
+            <TagInput
+              v-model="tags"
+              :suggestions="availableTags"
+              data-testid="tag-input-component"
+            />
+          </div>
+        </div>
+      </Transition>
+
+      <!-- NumPad -->
+      <div class="mb-3">
+        <NumPad
+          @digit="handleDigit"
+          @decimal="handleDecimal"
+          @backspace="handleBackspace"
+        />
+      </div>
+
+      <!-- Error message -->
+      <div
+        v-if="submitError"
+        class="text-body mb-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger"
+        role="alert"
+      >
+        {{ submitError }}
+      </div>
+
+      <!-- Save button -->
+      <button
+        type="button"
+        class="flex h-12 w-full items-center justify-center rounded-xl font-semibold text-white transition-opacity duration-150"
+        :style="{ backgroundColor: saveButtonColor }"
+        :disabled="isSaveDisabled"
+        :class="{ 'cursor-not-allowed opacity-50': isSaveDisabled }"
+        @click="handleSubmit"
+      >
+        <span v-if="isSubmitting" class="flex items-center gap-2">
+          <Loader2 :size="18" class="animate-spin" />
+          Saving…
+        </span>
+        <span v-else>{{ saveLabel }}</span>
+      </button>
     </div>
-  </Transition>
+  </ResponsiveSheet>
 
   <!-- Discard confirmation dialog -->
   <Transition name="backdrop">
@@ -445,15 +400,6 @@ const saveLabel = computed(() => {
   opacity: 0;
 }
 
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: transform 0.25s ease;
-}
-.sheet-enter-from,
-.sheet-leave-to {
-  transform: translateY(100%);
-}
-
 .expand-enter-active,
 .expand-leave-active {
   transition: opacity 0.2s ease, max-height 0.2s ease;
@@ -464,10 +410,6 @@ const saveLabel = computed(() => {
 .expand-leave-to {
   opacity: 0;
   max-height: 0;
-}
-
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .z-60 {

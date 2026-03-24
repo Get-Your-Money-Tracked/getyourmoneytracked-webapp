@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from 'firebase/auth'
-import { ONBOARDING_COMPLETED_KEY, SIGNUP_TIMESTAMP_KEY } from '@/utils/constants'
+import { ONBOARDING_COMPLETED_KEY, SIGNUP_TIMESTAMP_KEY, DISPLAY_NAME_KEY } from '@/utils/constants'
 
 // localStorage key for persisting defaultCurrency between sessions
 const CURRENCY_KEY = 'gymt_default_currency'
@@ -33,6 +33,22 @@ function saveCurrencyToStorage(currency: string): void {
   }
 }
 
+function loadDisplayNameFromStorage(): string | null {
+  try {
+    return localStorage.getItem(DISPLAY_NAME_KEY)
+  } catch {
+    return null
+  }
+}
+
+function saveDisplayNameToStorage(name: string): void {
+  try {
+    localStorage.setItem(DISPLAY_NAME_KEY, name)
+  } catch {
+    // localStorage may be unavailable — ignore
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const isLoading = ref(true)       // true until initial onAuthStateChanged fires
@@ -41,13 +57,20 @@ export const useAuthStore = defineStore('auth', () => {
   const defaultCurrency = ref<string>('USD')
   /** Set to true after a successful signup — cleared once the onboarding redirect is consumed */
   const isNewUser = ref(false)
+  /**
+   * Local display name override — stored in localStorage as a stopgap until a backend
+   * updateUser mutation is available. Takes precedence over the Firebase displayName.
+   */
+  const displayNameOverride = ref<string | null>(loadDisplayNameFromStorage())
 
   // ── Computed ───────────────────────────────────────────────
   const isAuthenticated = computed(() => user.value !== null)
-  const displayName = computed(() => user.value?.displayName ?? user.value?.email ?? 'there')
+  const displayName = computed(
+    () => displayNameOverride.value ?? user.value?.displayName ?? user.value?.email ?? 'there',
+  )
   const email = computed(() => user.value?.email ?? '')
   const initials = computed(() => {
-    const name = user.value?.displayName ?? user.value?.email ?? ''
+    const name = displayNameOverride.value ?? user.value?.displayName ?? user.value?.email ?? ''
     const parts = name.trim().split(/\s+/)
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -97,8 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth')
       await signInWithEmailAndPassword(getAuth(), emailInput, password)
-      // Load defaultCurrency from localStorage (saved during signup)
-      defaultCurrency.value = loadCurrencyFromStorage()
+      // Currency will be hydrated from API via hydrateFromApi() called by onAuthStateChanged
       // user is set via onAuthStateChanged in main.ts
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? ''
@@ -163,6 +185,39 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Update user profile (display name + default currency).
+   * Calls the backend updateUser mutation and syncs state locally.
+   */
+  async function updateProfile(name: string, currency: string): Promise<void> {
+    const { callUpdateUser } = await import('@/graphql/mutations/auth')
+    const updated = await callUpdateUser(name, currency)
+    displayNameOverride.value = updated.displayName
+    saveDisplayNameToStorage(updated.displayName)
+    defaultCurrency.value = updated.defaultCurrency
+    saveCurrencyToStorage(updated.defaultCurrency)
+  }
+
+  /**
+   * Hydrate the store from the backend `me` query.
+   * Called on initial auth state change (login) to sync currency + display name.
+   */
+  async function hydrateFromApi(): Promise<void> {
+    try {
+      const { callMe } = await import('@/graphql/mutations/auth')
+      const me = await callMe()
+      if (me) {
+        defaultCurrency.value = me.defaultCurrency
+        saveCurrencyToStorage(me.defaultCurrency)
+        displayNameOverride.value = me.displayName
+        saveDisplayNameToStorage(me.displayName)
+      }
+    } catch {
+      // If the API is unreachable, fall back to localStorage values
+      defaultCurrency.value = loadCurrencyFromStorage()
+    }
+  }
+
   async function logout(): Promise<void> {
     const { getAuth, signOut } = await import('firebase/auth')
     await signOut(getAuth())
@@ -171,6 +226,12 @@ export const useAuthStore = defineStore('auth', () => {
     isNewUser.value = false
     defaultCurrency.value = 'USD'
     saveCurrencyToStorage('USD')
+    displayNameOverride.value = null
+    try {
+      localStorage.removeItem(DISPLAY_NAME_KEY)
+    } catch {
+      // ignore
+    }
 
     // Clear onboarding + tip keys so the next user on a shared device gets a fresh experience
     try {
@@ -220,6 +281,8 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     signup,
     sendPasswordReset,
+    updateProfile,
+    hydrateFromApi,
     logout,
   }
 })

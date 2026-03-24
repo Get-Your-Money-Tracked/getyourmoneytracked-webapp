@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useCategoriesStore } from '@/stores/categories'
+import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
   open: boolean
@@ -104,198 +105,134 @@ async function handleSubmit() {
     isSubmitting.value = false
   }
 }
-
-// ── Swipe-to-dismiss ──────────────────────────────────────────
-let touchStartY = 0
-
-function onTouchStart(e: TouchEvent) {
-  touchStartY = e.touches[0].clientY
-}
-
-function onTouchEnd(e: TouchEvent) {
-  const delta = e.changedTouches[0].clientY - touchStartY
-  if (delta > 80) {
-    emit('close')
-  }
-}
 </script>
 
 <template>
-  <!-- Backdrop -->
-  <Transition name="backdrop">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 bg-black/40"
-      aria-hidden="true"
-      @click="$emit('close')"
-    />
-  </Transition>
-
-  <!-- Sheet -->
-  <Transition name="sheet">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
-      :style="{ boxShadow: 'var(--shadow-sheet)' }"
-      role="dialog"
-      aria-modal="true"
-      aria-label="New Category"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
-    >
-      <div class="px-5 pb-8 pt-4">
-        <!-- Drag handle -->
-        <div class="mb-5 flex justify-center">
-          <div class="h-1 w-8 rounded-full bg-border" aria-hidden="true" />
-        </div>
-
-        <!-- Title -->
-        <h2 class="text-section-title mb-5 font-semibold text-text-primary">New Category</h2>
-
-        <!-- Name -->
-        <div class="mb-4">
-          <label
-            for="add-category-name"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Name
-          </label>
-          <input
-            id="add-category-name"
-            v-model="name"
-            type="text"
-            class="h-12 w-full rounded-xl bg-surface-muted px-4 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-            placeholder='e.g., "Coffee"'
-            autocomplete="off"
-            @blur="validateName"
-          />
-          <p v-if="nameError" class="text-caption mt-1 text-danger" role="alert">
-            {{ nameError }}
-          </p>
-          <p v-else-if="nameWarning" class="text-caption mt-1 text-warning">
-            {{ nameWarning }}
-          </p>
-        </div>
-
-        <!-- Icon picker -->
-        <div class="mb-4">
-          <label class="text-caption mb-2 block font-medium text-text-secondary">
-            Icon
-          </label>
-          <div class="grid grid-cols-5 gap-2">
-            <button
-              v-for="icon in ICON_OPTIONS"
-              :key="icon"
-              type="button"
-              class="flex h-11 w-full items-center justify-center rounded-xl text-xl transition-colors duration-150"
-              :class="
-                selectedIcon === icon
-                  ? 'ring-2 ring-primary bg-primary/10'
-                  : 'bg-surface-muted hover:bg-surface-elevated'
-              "
-              :aria-pressed="selectedIcon === icon"
-              :aria-label="`Select icon ${icon}`"
-              @click="selectedIcon = selectedIcon === icon ? null : icon"
-            >
-              {{ icon }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Color picker -->
-        <div class="mb-4">
-          <label class="text-caption mb-2 block font-medium text-text-secondary">
-            Color
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="color in PRESET_COLORS"
-              :key="color"
-              type="button"
-              class="h-8 w-8 flex-shrink-0 rounded-full transition-all duration-150"
-              :style="{ backgroundColor: color }"
-              :class="
-                selectedColor === color
-                  ? 'ring-2 ring-offset-2 ring-primary scale-110'
-                  : 'opacity-80 hover:opacity-100'
-              "
-              :aria-pressed="selectedColor === color"
-              :aria-label="`Select color ${color}`"
-              @click="selectedColor = color"
-            />
-          </div>
-        </div>
-
-        <!-- Parent category (optional) -->
-        <div class="mb-6">
-          <label
-            for="add-category-parent"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Parent Category (optional)
-          </label>
-          <div class="relative">
-            <select
-              id="add-category-parent"
-              v-model="selectedParentId"
-              class="h-12 w-full appearance-none rounded-xl bg-surface-muted px-4 pr-10 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-            >
-              <option :value="null">None</option>
-              <option
-                v-for="parent in parentOptions"
-                :key="parent.id"
-                :value="parent.id"
-              >
-                {{ parent.icon ?? '' }} {{ parent.name }}
-              </option>
-            </select>
-            <span
-              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
-              aria-hidden="true"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </span>
-          </div>
-        </div>
-
-        <!-- Error message -->
-        <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert">
-          {{ submitError }}
-        </p>
-
-        <!-- Submit button -->
-        <button
-          type="button"
-          class="h-12 w-full rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-          :style="{ backgroundColor: 'var(--color-primary)' }"
-          :disabled="!isFormValid || isSubmitting"
-          @click="handleSubmit"
+  <ResponsiveSheet :open="open" title="New Category" test-id="add-category-sheet" @close="$emit('close')">
+    <div class="px-5 pb-8 pt-4">
+      <!-- Name -->
+      <div class="mb-4">
+        <label
+          for="add-category-name"
+          class="text-caption mb-1 block font-medium text-text-secondary"
         >
-          {{ isSubmitting ? 'Saving…' : 'Save Category' }}
-        </button>
+          Name
+        </label>
+        <input
+          id="add-category-name"
+          v-model="name"
+          type="text"
+          class="h-12 w-full rounded-xl bg-surface-muted px-4 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
+          placeholder='e.g., "Coffee"'
+          autocomplete="off"
+          @blur="validateName"
+        />
+        <p v-if="nameError" class="text-caption mt-1 text-danger" role="alert">
+          {{ nameError }}
+        </p>
+        <p v-else-if="nameWarning" class="text-caption mt-1 text-warning">
+          {{ nameWarning }}
+        </p>
       </div>
+
+      <!-- Icon picker -->
+      <div class="mb-4">
+        <label class="text-caption mb-2 block font-medium text-text-secondary">
+          Icon
+        </label>
+        <div class="grid grid-cols-5 gap-2">
+          <button
+            v-for="icon in ICON_OPTIONS"
+            :key="icon"
+            type="button"
+            class="flex h-11 w-full items-center justify-center rounded-xl text-xl transition-colors duration-150"
+            :class="
+              selectedIcon === icon
+                ? 'ring-2 ring-primary bg-primary/10'
+                : 'bg-surface-muted hover:bg-surface-elevated'
+            "
+            :aria-pressed="selectedIcon === icon"
+            :aria-label="`Select icon ${icon}`"
+            @click="selectedIcon = selectedIcon === icon ? null : icon"
+          >
+            {{ icon }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Color picker -->
+      <div class="mb-4">
+        <label class="text-caption mb-2 block font-medium text-text-secondary">
+          Color
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="color in PRESET_COLORS"
+            :key="color"
+            type="button"
+            class="h-8 w-8 flex-shrink-0 rounded-full transition-all duration-150"
+            :style="{ backgroundColor: color }"
+            :class="
+              selectedColor === color
+                ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                : 'opacity-80 hover:opacity-100'
+            "
+            :aria-pressed="selectedColor === color"
+            :aria-label="`Select color ${color}`"
+            @click="selectedColor = color"
+          />
+        </div>
+      </div>
+
+      <!-- Parent category (optional) -->
+      <div class="mb-6">
+        <label
+          for="add-category-parent"
+          class="text-caption mb-1 block font-medium text-text-secondary"
+        >
+          Parent Category (optional)
+        </label>
+        <div class="relative">
+          <select
+            id="add-category-parent"
+            v-model="selectedParentId"
+            class="h-12 w-full appearance-none rounded-xl bg-surface-muted px-4 pr-10 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
+          >
+            <option :value="null">None</option>
+            <option
+              v-for="parent in parentOptions"
+              :key="parent.id"
+              :value="parent.id"
+            >
+              {{ parent.icon ?? '' }} {{ parent.name }}
+            </option>
+          </select>
+          <span
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
+            aria-hidden="true"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert">
+        {{ submitError }}
+      </p>
+
+      <!-- Submit button -->
+      <button
+        type="button"
+        class="h-12 w-full rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
+        :style="{ backgroundColor: 'var(--color-primary)' }"
+        :disabled="!isFormValid || isSubmitting"
+        @click="handleSubmit"
+      >
+        {{ isSubmitting ? 'Saving…' : 'Save Category' }}
+      </button>
     </div>
-  </Transition>
+  </ResponsiveSheet>
 </template>
-
-<style scoped>
-.backdrop-enter-active,
-.backdrop-leave-active {
-  transition: opacity 0.2s ease;
-}
-.backdrop-enter-from,
-.backdrop-leave-to {
-  opacity: 0;
-}
-
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.sheet-enter-from,
-.sheet-leave-to {
-  transform: translateY(100%);
-}
-</style>

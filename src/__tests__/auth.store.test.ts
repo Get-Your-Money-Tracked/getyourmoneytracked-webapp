@@ -24,8 +24,12 @@ vi.mock('firebase/auth', async (importOriginal) => {
 
 // ── Mock initializeUser mutation ──────────────────────────────────────────────
 const mockCallInitializeUser = vi.fn()
+const mockCallMe = vi.fn()
+const mockCallUpdateUser = vi.fn()
 vi.mock('@/graphql/mutations/auth', () => ({
   callInitializeUser: (...args: unknown[]) => mockCallInitializeUser(...args),
+  callMe: (...args: unknown[]) => mockCallMe(...args),
+  callUpdateUser: (...args: unknown[]) => mockCallUpdateUser(...args),
 }))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -132,21 +136,32 @@ describe('useAuthStore', () => {
     expect(localStorage.getItem('gymt_default_currency')).toBe('EUR')
   })
 
-  it('loads defaultCurrency from localStorage on login', async () => {
-    localStorage.setItem('gymt_default_currency', 'BRL')
-    const user = makeFirebaseUser()
-    mockSignIn.mockResolvedValueOnce({ user })
+  it('loads defaultCurrency from API via hydrateFromApi', async () => {
+    mockCallMe.mockResolvedValueOnce({
+      id: '1',
+      email: 'user@example.com',
+      displayName: 'Test User',
+      defaultCurrency: 'BRL',
+    })
     const store = useAuthStore()
-    await store.login('user@example.com', 'password123')
+    await store.hydrateFromApi()
     expect(store.defaultCurrency).toBe('BRL')
+    expect(localStorage.getItem('gymt_default_currency')).toBe('BRL')
   })
 
-  it('falls back to USD when localStorage has no currency on login', async () => {
-    localStorage.removeItem('gymt_default_currency')
-    const user = makeFirebaseUser()
-    mockSignIn.mockResolvedValueOnce({ user })
+  it('falls back to localStorage when API fails in hydrateFromApi', async () => {
+    localStorage.setItem('gymt_default_currency', 'GBP')
+    mockCallMe.mockRejectedValueOnce(new Error('Network error'))
     const store = useAuthStore()
-    await store.login('user@example.com', 'password123')
+    await store.hydrateFromApi()
+    expect(store.defaultCurrency).toBe('GBP')
+  })
+
+  it('falls back to USD when hydrateFromApi fails and no localStorage', async () => {
+    localStorage.removeItem('gymt_default_currency')
+    mockCallMe.mockRejectedValueOnce(new Error('Network error'))
+    const store = useAuthStore()
+    await store.hydrateFromApi()
     expect(store.defaultCurrency).toBe('USD')
   })
 

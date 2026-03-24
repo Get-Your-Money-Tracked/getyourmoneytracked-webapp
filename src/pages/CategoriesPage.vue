@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { FolderOpen } from 'lucide-vue-next'
 import { useCategoriesStore } from '@/stores/categories'
+import { invalidateDashboard } from '@/composables/useDashboardRefresh'
 import CategoryListItem from '@/components/categories/CategoryListItem.vue'
 import AddCategorySheet from '@/components/categories/AddCategorySheet.vue'
 import EditCategorySheet from '@/components/categories/EditCategorySheet.vue'
@@ -65,7 +66,7 @@ const SKELETON_COUNT = 6
 
 <template>
   <div class="min-h-screen bg-surface-elevated">
-    <div class="mx-auto max-w-md px-4 pb-28 pt-6">
+    <div class="mx-auto max-w-md md:max-w-4xl px-4 pb-28 pt-6">
       <!-- Header with back button -->
       <div class="mb-5 flex items-center gap-3">
         <button
@@ -122,14 +123,13 @@ const SKELETON_COUNT = 6
 
       <!-- Category list -->
       <template v-else>
-        <div
-          class="mb-4 overflow-hidden rounded-xl bg-surface"
-          :style="{ boxShadow: 'var(--shadow-card)' }"
-        >
-          <template v-for="(parent, pIdx) in categoriesStore.nestedCategories" :key="parent.id">
-            <!-- Divider above each parent (except first) -->
-            <div v-if="pIdx > 0" class="border-t border-border" />
-
+        <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div
+            v-for="parent in categoriesStore.nestedCategories"
+            :key="parent.id"
+            class="overflow-hidden rounded-xl bg-surface"
+            :style="{ boxShadow: 'var(--shadow-card)' }"
+          >
             <!-- Parent category row -->
             <CategoryListItem
               :category="parent"
@@ -149,7 +149,7 @@ const SKELETON_COUNT = 6
                 @move-down="handleMoveDown"
               />
             </template>
-          </template>
+          </div>
         </div>
 
         <!-- Add Category button -->
@@ -177,7 +177,7 @@ const SKELETON_COUNT = 6
     <AddCategorySheet
       :open="showAddSheet"
       @close="showAddSheet = false"
-      @created="() => {}"
+      @created="invalidateDashboard"
     />
 
     <!-- Edit Category Sheet -->
@@ -185,8 +185,8 @@ const SKELETON_COUNT = 6
       :open="showEditSheet"
       :category="selectedCategory"
       @close="closeEditSheet"
-      @saved="() => {}"
-      @deleted="() => {}"
+      @saved="invalidateDashboard"
+      @deleted="invalidateDashboard"
     />
   </div>
 </template>

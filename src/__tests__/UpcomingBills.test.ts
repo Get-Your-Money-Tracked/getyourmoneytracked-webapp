@@ -36,10 +36,10 @@ describe('UpcomingBills', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders section header "Upcoming Bills" when bills exist', () => {
+  it('renders section header "Upcoming Recurring" when bills exist', () => {
     const wrapper = mountBills([makeBill('b1', 'Netflix', '2026-03-25')])
     expect(wrapper.find('[data-testid="upcoming-bills"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Upcoming Bills')
+    expect(wrapper.text()).toContain('Upcoming Recurring')
   })
 
   it('renders bill items', () => {

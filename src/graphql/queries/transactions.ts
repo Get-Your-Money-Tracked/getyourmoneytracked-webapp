@@ -93,6 +93,10 @@ export interface TransactionFilter {
   type?: string | null
   search?: string | null
   tags?: string[] | null
+  startDate?: string | null
+  endDate?: string | null
+  minAmount?: string | null
+  maxAmount?: string | null
   limit?: number
   offset?: number
 }

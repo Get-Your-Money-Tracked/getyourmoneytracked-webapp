@@ -34,7 +34,7 @@ function navigate() {
 <template>
   <button
     type="button"
-    class="relative flex w-full cursor-pointer items-start px-4 py-4 text-left transition-colors duration-150 hover:bg-surface-elevated"
+    class="relative flex w-full cursor-pointer items-start px-4 py-4 text-left transition-all duration-150 hover:bg-surface-elevated active:scale-[0.98]"
     data-testid="month-summary-row"
     @click="navigate"
   >

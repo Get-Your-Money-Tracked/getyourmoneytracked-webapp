@@ -69,8 +69,10 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 // ── Toast store mock ──────────────────────────────────────────
+const _mockToastShow = vi.fn()
+
 vi.mock('@/stores/toast', () => ({
-  useToastStore: () => reactive({ show: vi.fn() }),
+  useToastStore: () => reactive({ show: _mockToastShow }),
 }))
 
 // ── Router ────────────────────────────────────────────────────
@@ -129,6 +131,7 @@ describe('SubscriptionsPage', () => {
     _mockIsLoading.value = true
     _mockError.value = null
     vi.clearAllMocks()
+    _mockToastShow.mockReset()
     _mockLoadSubs.mockImplementation(async () => { _mockIsLoading.value = false })
     document.body.innerHTML = ''
   })
@@ -139,11 +142,11 @@ describe('SubscriptionsPage', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders page title "Subscriptions"', async () => {
+  it('renders page title "Recurring"', async () => {
     _mockIsLoading.value = false
     const wrapper = mountPage()
     await flushPromises()
-    expect(wrapper.text()).toContain('Subscriptions')
+    expect(wrapper.find('[data-testid="page-title"]').text()).toContain('Recurring')
   })
 
   it('shows loading skeleton while loading', () => {
@@ -163,18 +166,6 @@ describe('SubscriptionsPage', () => {
     const wrapper = mountPage()
     await flushPromises()
     expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(true)
-  })
-
-  it('empty state contains "No subscriptions yet."', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-    expect(wrapper.text()).toContain('No subscriptions yet.')
-  })
-
-  it('empty state has an Add Subscription button', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-    expect(wrapper.find('[data-testid="empty-add-btn"]').exists()).toBe(true)
   })
 
   it('shows error message when loading fails', async () => {
@@ -204,50 +195,56 @@ describe('SubscriptionsPage', () => {
     expect(_mockLoadSubs).toHaveBeenCalled()
   })
 
-  it('renders active section when active subscriptions exist', async () => {
-    _mockSubs.value = [makeSub({ id: 's1', isActive: true })]
+  // ── Tab switcher ──────────────────────────────────────────────
+  it('renders Expense and Income tabs', async () => {
+    _mockSubs.value = [makeSub()]
     const wrapper = mountPage()
     await flushPromises()
-    expect(wrapper.find('[data-testid="active-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tab-switcher"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tab-expense"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tab-income"]').exists()).toBe(true)
   })
 
-  it('renders active section header with correct count', async () => {
+  it('Expense tab is active by default', async () => {
+    _mockSubs.value = [makeSub()]
+    const wrapper = mountPage()
+    await flushPromises()
+    const expenseTab = wrapper.find('[data-testid="tab-expense"]')
+    expect(expenseTab.classes()).toContain('bg-surface')
+  })
+
+  it('shows expense subscriptions on Expense tab', async () => {
+    _mockSubs.value = [makeSub({ id: 'e1', type: 'EXPENSE' })]
+    const wrapper = mountPage()
+    await flushPromises()
+    await wrapper.find('[data-testid="tab-expense"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="subscription-item-e1"]').exists()).toBe(true)
+  })
+
+  it('shows income subscriptions on Income tab', async () => {
     _mockSubs.value = [
-      makeSub({ id: 's1', isActive: true }),
-      makeSub({ id: 's2', isActive: true, name: 'Spotify' }),
+      makeSub({ id: 'e1', type: 'EXPENSE' }),
+      makeSub({ id: 'i1', name: 'Salary', type: 'INCOME', amount: 3000 }),
     ]
     const wrapper = mountPage()
     await flushPromises()
-    expect(wrapper.find('[data-testid="active-section-header"]').text()).toContain('Active')
-    expect(wrapper.text()).toContain('(2)')
+    await wrapper.find('[data-testid="tab-income"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="subscription-item-i1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="subscription-item-e1"]').exists()).toBe(false)
   })
 
-  it('renders inactive section header when inactive subscriptions exist', async () => {
-    _mockSubs.value = [
-      makeSub({ id: 's1', isActive: true }),
-      makeSub({ id: 's2', isActive: false, name: 'Old Plan' }),
-    ]
+  it('hides expense subscriptions when Income tab is selected', async () => {
+    _mockSubs.value = [makeSub({ id: 'e1', type: 'EXPENSE' })]
     const wrapper = mountPage()
     await flushPromises()
-    expect(wrapper.find('[data-testid="inactive-section-header"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="tab-income"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="subscription-item-e1"]').exists()).toBe(false)
   })
 
-  it('inactive list is collapsed by default', async () => {
-    _mockSubs.value = [makeSub({ id: 's2', isActive: false })]
-    const wrapper = mountPage()
-    await flushPromises()
-    expect(wrapper.find('[data-testid="inactive-list"]').exists()).toBe(false)
-  })
-
-  it('inactive list expands when header is clicked', async () => {
-    _mockSubs.value = [makeSub({ id: 's2', isActive: false })]
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.find('[data-testid="inactive-section-header"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="inactive-list"]').exists()).toBe(true)
-  })
-
+  // ── Recurring summary card ────────────────────────────────────
   it('renders recurring summary card when subscriptions exist', async () => {
     _mockSubs.value = [makeSub()]
     const wrapper = mountPage()
@@ -255,14 +252,79 @@ describe('SubscriptionsPage', () => {
     expect(wrapper.find('[data-testid="recurring-summary-card"]').exists()).toBe(true)
   })
 
-  it('renders a SubscriptionItem for each active subscription', async () => {
+  it('recurring summary card shows expenses, income, and net columns', async () => {
+    _mockSubs.value = [makeSub()]
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="monthly-expenses"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="monthly-income"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="monthly-net"]').exists()).toBe(true)
+  })
+
+  // ── Active/Inactive sections ──────────────────────────────────
+  it('renders active section when active subscriptions exist on active tab', async () => {
+    _mockSubs.value = [makeSub({ id: 's1', isActive: true, type: 'EXPENSE' })]
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="active-list"]').exists()).toBe(true)
+  })
+
+  it('renders active section header with correct count', async () => {
     _mockSubs.value = [
-      makeSub({ id: 's1', isActive: true }),
-      makeSub({ id: 's2', isActive: true, name: 'Spotify' }),
+      makeSub({ id: 's1', isActive: true, type: 'EXPENSE' }),
+      makeSub({ id: 's2', isActive: true, name: 'Spotify', type: 'EXPENSE' }),
+    ]
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="active-section-header"]').text()).toContain('Active')
+    expect(wrapper.text()).toContain('(2)')
+  })
+
+  it('renders inactive section header when inactive subscriptions exist on active tab', async () => {
+    _mockSubs.value = [
+      makeSub({ id: 's1', isActive: true, type: 'EXPENSE' }),
+      makeSub({ id: 's2', isActive: false, name: 'Old Plan', type: 'EXPENSE' }),
+    ]
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="inactive-section-header"]').exists()).toBe(true)
+  })
+
+  it('inactive list is collapsed by default', async () => {
+    _mockSubs.value = [makeSub({ id: 's2', isActive: false, type: 'EXPENSE' })]
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="inactive-list"]').exists()).toBe(false)
+  })
+
+  it('inactive list expands when header is clicked', async () => {
+    _mockSubs.value = [makeSub({ id: 's2', isActive: false, type: 'EXPENSE' })]
+    const wrapper = mountPage()
+    await flushPromises()
+    await wrapper.find('[data-testid="inactive-section-header"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="inactive-list"]').exists()).toBe(true)
+  })
+
+  it('renders a SubscriptionItem for each active subscription on the tab', async () => {
+    _mockSubs.value = [
+      makeSub({ id: 's1', isActive: true, type: 'EXPENSE' }),
+      makeSub({ id: 's2', isActive: true, name: 'Spotify', type: 'EXPENSE' }),
     ]
     const wrapper = mountPage()
     await flushPromises()
     expect(wrapper.find('[data-testid="subscription-item-s1"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="subscription-item-s2"]').exists()).toBe(true)
+  })
+
+  it('does NOT fire a page-level toast when the deleted event is emitted (sheet handles it)', async () => {
+    _mockSubs.value = [makeSub()]
+    const wrapper = mountPage()
+    await flushPromises()
+    // Simulate the edit sheet emitting 'deleted'
+    const editSheet = wrapper.findComponent({ name: 'EditSubscriptionSheet' })
+    editSheet.vm.$emit('deleted')
+    await flushPromises()
+    expect(_mockToastShow).not.toHaveBeenCalled()
   })
 })

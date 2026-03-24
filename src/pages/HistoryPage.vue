@@ -98,9 +98,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-24">
+  <div class="min-h-screen pb-24 md:pb-0">
+    <div class="mx-auto max-w-md md:max-w-4xl px-4">
     <!-- Header -->
-    <div class="px-4 pt-6 pb-2">
+    <div class="pt-6 pb-2">
       <h1 class="text-page-title font-bold text-text-primary">History</h1>
     </div>
 
@@ -108,19 +109,19 @@ onUnmounted(() => {
     <PageTip page-key="history" />
 
     <!-- Sort controls -->
-    <div class="px-4 mb-4" data-testid="sort-controls-wrapper">
+    <div class="mb-4" data-testid="sort-controls-wrapper">
       <SortControls :model-value="sort" @update:model-value="onSortChange" />
     </div>
 
     <!-- Error state -->
-    <div v-if="error && !isLoading" class="px-4 py-3">
+    <div v-if="error && !isLoading" class="py-3">
       <p class="text-body text-danger" data-testid="error-message">{{ error }}</p>
     </div>
 
     <!-- Loading skeleton (initial load) -->
     <div
       v-if="isLoading && summaries.length === 0"
-      class="mx-4 overflow-hidden rounded-2xl bg-surface shadow-card"
+      class="overflow-hidden rounded-2xl bg-surface shadow-card"
       data-testid="loading-skeleton"
     >
       <div class="divide-y divide-border">
@@ -131,13 +132,15 @@ onUnmounted(() => {
     <!-- Month list -->
     <div
       v-else-if="summaries.length > 0"
-      class="mx-4 overflow-hidden rounded-2xl bg-surface shadow-card"
+      class="grid grid-cols-1 md:grid-cols-2 gap-4"
       data-testid="month-list"
     >
-      <div class="divide-y divide-border">
+      <div
+        v-for="summary in summaries"
+        :key="summary.month"
+        class="overflow-hidden rounded-2xl bg-surface shadow-card"
+      >
         <MonthSummaryRow
-          v-for="summary in summaries"
-          :key="summary.month"
           :summary="summary"
           :currency="authStore.defaultCurrency"
         />
@@ -160,5 +163,6 @@ onUnmounted(() => {
 
     <!-- Infinite scroll sentinel -->
     <div ref="sentinel" class="h-1" aria-hidden="true" data-testid="scroll-sentinel" />
+    </div>
   </div>
 </template>

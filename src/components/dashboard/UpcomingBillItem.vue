@@ -10,6 +10,8 @@ const props = defineProps<{
 
 const router = useRouter()
 
+const isIncome = computed(() => props.bill.type === 'INCOME')
+
 /** Check if the bill is due today */
 const isDueToday = computed(() => {
   if (!props.bill.nextDueDate) return false
@@ -41,15 +43,15 @@ function navigate() {
 <template>
   <button
     type="button"
-    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted"
+    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:scale-[0.98]"
     :data-testid="`bill-item-${bill.id}`"
     @click="navigate"
   >
-    <!-- Left: icon placeholder (no category context on UpcomingBill, use emoji) -->
+    <!-- Left: icon placeholder -->
     <div
       class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-sm"
     >
-      💳
+      {{ isIncome ? '💰' : '💳' }}
     </div>
 
     <!-- Middle: name -->
@@ -59,7 +61,13 @@ function navigate() {
 
     <!-- Right: amount + due date -->
     <div class="shrink-0 text-right">
-      <p class="text-body font-medium tabular-nums text-text-primary">{{ formattedAmount }}</p>
+      <p
+        class="text-body font-medium tabular-nums"
+        :class="isIncome ? 'text-primary' : 'text-text-primary'"
+        data-testid="bill-amount"
+      >
+        {{ isIncome ? '+' : '' }}{{ formattedAmount }}
+      </p>
       <p
         class="text-caption font-medium"
         :class="isDueToday ? 'text-warning' : 'text-text-muted'"

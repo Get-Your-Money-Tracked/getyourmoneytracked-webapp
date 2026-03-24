@@ -29,7 +29,7 @@ function navigate() {
 <template>
   <button
     type="button"
-    class="block w-full px-4 py-3 text-left transition-colors hover:bg-surface-muted"
+    class="block w-full px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:scale-[0.98]"
     :data-testid="`budget-card-${budget.categoryId}`"
     @click="navigate"
   >

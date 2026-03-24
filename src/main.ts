@@ -69,8 +69,15 @@ router.beforeEach((to) => {
 // Wait for Firebase to resolve auth state before mounting the app.
 // Keep the listener alive so subsequent login/logout also update the store.
 let appMounted = false
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   authStore.setUser(user)
+
+  // Hydrate currency + display name from API for existing users
+  if (user && !authStore.isNewUser) {
+    authStore.hydrateFromApi().catch(() => {
+      // Silently fall back to localStorage if API is unreachable
+    })
+  }
 
   if (!appMounted) {
     appMounted = true

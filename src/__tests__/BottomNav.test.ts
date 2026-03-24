@@ -23,6 +23,7 @@ function createTestRouter(initialRoute = '/dashboard') {
       { path: '/dashboard', component: { template: '<div />' } },
       { path: '/history', component: { template: '<div />' } },
       { path: '/history/:month', component: { template: '<div />' } },
+      { path: '/reports', component: { template: '<div />' } },
       { path: '/budgets', component: { template: '<div />' } },
       { path: '/accounts', component: { template: '<div />' } },
       { path: '/settings', component: { template: '<div />' } },
@@ -64,10 +65,15 @@ describe('BottomNav', () => {
     expect(wrapper.find('[data-testid="nav-history"]').text()).toContain('History')
   })
 
-  it('renders Budgets tab', async () => {
+  it('renders Reports tab', async () => {
     const wrapper = await mountNav()
-    expect(wrapper.find('[data-testid="nav-budgets"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="nav-budgets"]').text()).toContain('Budgets')
+    expect(wrapper.find('[data-testid="nav-reports"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="nav-reports"]').text()).toContain('Reports')
+  })
+
+  it('does not render Budgets as a direct tab', async () => {
+    const wrapper = await mountNav()
+    expect(wrapper.find('[data-testid="nav-budgets"]').exists()).toBe(false)
   })
 
   it('renders More button', async () => {
@@ -82,8 +88,8 @@ describe('BottomNav', () => {
     expect(wrapper.find('[data-testid="nav-home"]').attributes('aria-current')).toBe('page')
   })
 
-  it('does not mark Home as active on /budgets', async () => {
-    const wrapper = await mountNav('/budgets')
+  it('does not mark Home as active on /reports', async () => {
+    const wrapper = await mountNav('/reports')
     expect(wrapper.find('[data-testid="nav-home"]').attributes('aria-current')).toBeUndefined()
   })
 
@@ -97,9 +103,14 @@ describe('BottomNav', () => {
     expect(wrapper.find('[data-testid="nav-history"]').attributes('aria-current')).toBe('page')
   })
 
-  it('highlights Budgets tab when on /budgets', async () => {
-    const wrapper = await mountNav('/budgets')
-    expect(wrapper.find('[data-testid="nav-budgets"]').attributes('aria-current')).toBe('page')
+  it('highlights Reports tab when on /reports', async () => {
+    const wrapper = await mountNav('/reports')
+    expect(wrapper.find('[data-testid="nav-reports"]').attributes('aria-current')).toBe('page')
+  })
+
+  it('does not highlight Reports tab when on /dashboard', async () => {
+    const wrapper = await mountNav('/dashboard')
+    expect(wrapper.find('[data-testid="nav-reports"]').attributes('aria-current')).toBeUndefined()
   })
 
   // ── RouterLink hrefs ──────────────────────────────────────────
@@ -113,12 +124,12 @@ describe('BottomNav', () => {
     expect(wrapper.find('[data-testid="nav-history"]').attributes('href')).toBe('/history')
   })
 
-  it('Budgets tab links to /budgets', async () => {
+  it('Reports tab links to /reports', async () => {
     const wrapper = await mountNav()
-    expect(wrapper.find('[data-testid="nav-budgets"]').attributes('href')).toBe('/budgets')
+    expect(wrapper.find('[data-testid="nav-reports"]').attributes('href')).toBe('/reports')
   })
 
-  // ── Center "+" button (Story 11.4) ───────────────────────────
+  // ── Center "+" button ────────────────────────────────────────
   it('renders the center Add Transaction button', async () => {
     const wrapper = await mountNav()
     expect(wrapper.find('[data-testid="nav-add-transaction"]').exists()).toBe(true)
@@ -137,6 +148,8 @@ describe('BottomNav', () => {
     expect(wrapper.emitted('add-transaction')).toBeTruthy()
     expect(wrapper.emitted('add-transaction')!.length).toBe(1)
   })
+
+  // ── More popover ──────────────────────────────────────────────
   it('More menu is hidden by default', async () => {
     const wrapper = await mountNav()
     expect(wrapper.find('[data-testid="more-menu"]').exists()).toBe(false)
@@ -147,6 +160,22 @@ describe('BottomNav', () => {
     await wrapper.find('[data-testid="nav-more"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="more-menu"]').exists()).toBe(true)
+  })
+
+  it('More menu contains Search link', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-more"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-search-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="more-search-btn"]').text()).toContain('Search')
+  })
+
+  it('More menu contains Budgets link', async () => {
+    const wrapper = await mountNav()
+    await wrapper.find('[data-testid="nav-more"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-budgets-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="more-budgets-btn"]').text()).toContain('Budgets')
   })
 
   it('More menu contains Accounts link', async () => {
@@ -193,5 +222,10 @@ describe('BottomNav', () => {
   it('More button has aria-expanded=false when menu is closed', async () => {
     const wrapper = await mountNav()
     expect(wrapper.find('[data-testid="nav-more"]').attributes('aria-expanded')).toBe('false')
+  })
+
+  it('More button is highlighted when on /budgets', async () => {
+    const wrapper = await mountNav('/budgets')
+    expect(wrapper.find('[data-testid="nav-more"]').classes()).toContain('text-primary')
   })
 })

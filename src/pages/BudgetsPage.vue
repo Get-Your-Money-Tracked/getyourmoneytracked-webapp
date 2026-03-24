@@ -6,6 +6,7 @@ import { useBudgetsStore } from '@/stores/budgets'
 import { useCategoriesStore } from '@/stores/categories'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+import { invalidateDashboard } from '@/composables/useDashboardRefresh'
 import BudgetCard from '@/components/budgets/BudgetCard.vue'
 import BudgetSummaryCard from '@/components/budgets/BudgetSummaryCard.vue'
 import CreateBudgetSheet from '@/components/budgets/CreateBudgetSheet.vue'
@@ -35,6 +36,7 @@ function openCreate() {
 
 function onCreated() {
   toastStore.show('Budget created', 'success')
+  invalidateDashboard()
 }
 
 function openEdit(budget: Budget) {
@@ -44,11 +46,12 @@ function openEdit(budget: Budget) {
 
 function onSaved() {
   toastStore.show('Budget updated', 'success')
+  invalidateDashboard()
 }
 
 function onDeleted() {
-  toastStore.show('Budget deleted', 'success')
   selectedBudget.value = null
+  invalidateDashboard()
 }
 
 function closeEdit() {
@@ -58,87 +61,88 @@ function closeEdit() {
 </script>
 
 <template>
-  <div class="min-h-screen pb-24">
-    <!-- Header -->
-    <div class="flex items-center justify-between px-4 pb-4 pt-6">
-      <h1 class="text-page-title font-bold text-text-primary">Budgets</h1>
-      <button
-        type="button"
-        class="flex h-9 items-center gap-1.5 rounded-xl px-4 text-caption font-medium text-white transition-colors duration-150 hover:opacity-90"
-        :style="{ backgroundColor: 'var(--color-primary)' }"
-        data-testid="create-budget-btn"
-        @click="openCreate"
-      >
-        <Plus :size="16" aria-hidden="true" />
-        Create
-      </button>
-    </div>
-
-    <!-- Page tip (new users only, dismissible) -->
-    <PageTip page-key="budgets" />
-
-    <!-- Loading skeleton -->
-    <div
-      v-if="budgetsStore.isLoading"
-      class="mx-4 overflow-hidden rounded-2xl bg-surface"
-      :style="{ boxShadow: 'var(--shadow-card)' }"
-      data-testid="loading-skeleton"
-    >
-      <div class="divide-y divide-border">
-        <div v-for="n in 3" :key="n" class="animate-pulse px-4 py-4">
-          <div class="flex items-center gap-2">
-            <div class="h-5 w-5 rounded-full bg-surface-muted" />
-            <div class="h-4 w-32 rounded bg-surface-muted" />
-            <div class="ml-auto h-5 w-10 rounded-full bg-surface-muted" />
-          </div>
-          <div class="mt-2 h-2.5 w-full rounded-full bg-surface-muted" />
-          <div class="mt-1.5 h-3 w-24 rounded bg-surface-muted" />
-        </div>
+  <div class="min-h-screen pb-24 md:pb-0">
+    <div class="mx-auto max-w-md md:max-w-4xl px-4">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-4 pt-6">
+        <h1 class="text-page-title font-bold text-text-primary">Budgets</h1>
+        <button
+          type="button"
+          class="flex h-9 items-center gap-1.5 rounded-xl px-4 text-caption font-medium text-white transition-colors duration-150 hover:opacity-90"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+          data-testid="create-budget-btn"
+          @click="openCreate"
+        >
+          <Plus :size="16" aria-hidden="true" />
+          Create
+        </button>
       </div>
-    </div>
 
-    <!-- Error state -->
-    <div v-else-if="budgetsStore.error" class="px-4 py-3">
-      <p class="text-body text-danger" data-testid="error-message">{{ budgetsStore.error }}</p>
-    </div>
+      <!-- Page tip (new users only, dismissible) -->
+      <PageTip page-key="budgets" />
 
-    <!-- Empty state -->
-    <EmptyState
-      v-else-if="budgetsStore.budgets.length === 0"
-      :icon="Target"
-      title="No budgets set for this month."
-      description="Set spending limits for categories to stay on track. We'll warn you when you're getting close."
-      action-label="Create Budget"
-      action-test-id="empty-create-btn"
-      @action="openCreate"
-    />
-
-    <!-- Budget list -->
-    <template v-else>
-      <!-- Summary card -->
-      <BudgetSummaryCard
-        :total-budgeted="budgetsStore.totalBudgeted"
-        :total-spent="budgetsStore.totalSpent"
-        :currency="authStore.defaultCurrency"
-      />
-
-      <!-- Budget cards -->
+      <!-- Loading skeleton -->
       <div
-        class="mx-4 overflow-hidden rounded-xl bg-surface"
+        v-if="budgetsStore.isLoading"
+        class="overflow-hidden rounded-2xl bg-surface"
         :style="{ boxShadow: 'var(--shadow-card)' }"
-        data-testid="budget-list"
+        data-testid="loading-skeleton"
       >
         <div class="divide-y divide-border">
-          <BudgetCard
-            v-for="budget in budgetsStore.sortedBudgets"
-            :key="budget.id"
-            :budget="budget"
-            :currency="authStore.defaultCurrency"
-            @edit="openEdit"
-          />
+          <div v-for="n in 3" :key="n" class="animate-pulse px-4 py-4">
+            <div class="flex items-center gap-2">
+              <div class="h-5 w-5 rounded-full bg-surface-muted" />
+              <div class="h-4 w-32 rounded bg-surface-muted" />
+              <div class="ml-auto h-5 w-10 rounded-full bg-surface-muted" />
+            </div>
+            <div class="mt-2 h-2.5 w-full rounded-full bg-surface-muted" />
+            <div class="mt-1.5 h-3 w-24 rounded bg-surface-muted" />
+          </div>
         </div>
       </div>
-    </template>
+
+      <!-- Error state -->
+      <div v-else-if="budgetsStore.error" class="py-3">
+        <p class="text-body text-danger" data-testid="error-message">{{ budgetsStore.error }}</p>
+      </div>
+
+      <!-- Empty state -->
+      <EmptyState
+        v-else-if="budgetsStore.budgets.length === 0"
+        :icon="Target"
+        title="No budgets set for this month."
+        description="Set spending limits for categories to stay on track. We'll warn you when you're getting close."
+        action-label="Create Budget"
+        action-test-id="empty-create-btn"
+        @action="openCreate"
+      />
+
+      <!-- Budget list -->
+      <template v-else>
+        <!-- Summary card -->
+        <BudgetSummaryCard
+          :total-budgeted="budgetsStore.totalBudgeted"
+          :total-spent="budgetsStore.totalSpent"
+          :currency="authStore.defaultCurrency"
+        />
+
+        <!-- Budget cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="budget-list">
+          <div
+            v-for="budget in budgetsStore.sortedBudgets"
+            :key="budget.id"
+            class="overflow-hidden rounded-xl bg-surface"
+            :style="{ boxShadow: 'var(--shadow-card)' }"
+          >
+            <BudgetCard
+              :budget="budget"
+              :currency="authStore.defaultCurrency"
+              @edit="openEdit"
+            />
+          </div>
+        </div>
+      </template>
+    </div>
 
     <!-- Create Budget Sheet -->
     <CreateBudgetSheet
@@ -159,4 +163,5 @@ function closeEdit() {
       @deleted="onDeleted"
     />
   </div>
+
 </template>

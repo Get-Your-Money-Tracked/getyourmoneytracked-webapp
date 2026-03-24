@@ -21,13 +21,22 @@ vi.mock('@/lib/urql', () => ({
 // ── Store mock ────────────────────────────────────────────────
 const _mockUpdateSubscription = vi.fn()
 const _mockDeleteSubscription = vi.fn()
+const _mockCreateSubscription = vi.fn()
 
 vi.mock('@/stores/subscriptions', () => ({
   useSubscriptionsStore: () =>
     reactive({
       updateSubscription: _mockUpdateSubscription,
       deleteSubscription: _mockDeleteSubscription,
+      createSubscription: _mockCreateSubscription,
     }),
+}))
+
+// ── Toast store mock ──────────────────────────────────────────
+const _mockToastShow = vi.fn()
+
+vi.mock('@/stores/toast', () => ({
+  useToastStore: () => reactive({ show: _mockToastShow }),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────
@@ -292,6 +301,53 @@ describe('EditSubscriptionSheet', () => {
     )
   })
 
+  // ── autoLog toggle ────────────────────────────────────────────
+  it('renders auto-log section', async () => {
+    const wrapper = mountSheet()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="autolog-section"]').exists()).toBe(true)
+  })
+
+  it('pre-fills autoLog=false when subscription has autoLog=false', async () => {
+    const wrapper = mountSheet(makeSub({ autoLog: false }))
+    await flushPromises()
+    const cb = wrapper.find('[data-testid="autolog-toggle"]').element as HTMLInputElement
+    expect(cb.checked).toBe(false)
+  })
+
+  it('pre-fills autoLog=true when subscription has autoLog=true', async () => {
+    const wrapper = mountSheet(makeSub({ autoLog: true }))
+    await flushPromises()
+    const cb = wrapper.find('[data-testid="autolog-toggle"]').element as HTMLInputElement
+    expect(cb.checked).toBe(true)
+  })
+
+  it('submits with autoLog=true when toggled on', async () => {
+    _mockUpdateSubscription.mockResolvedValueOnce(makeSub({ autoLog: true }))
+    const wrapper = mountSheet(makeSub({ autoLog: false }))
+    await flushPromises()
+    await wrapper.find('[data-testid="autolog-toggle"]').setValue(true)
+    await wrapper.find('[data-testid="update-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockUpdateSubscription).toHaveBeenCalledWith(
+      'sub-1',
+      expect.objectContaining({ autoLog: true }),
+    )
+  })
+
+  it('submits with autoLog=false when toggled off', async () => {
+    _mockUpdateSubscription.mockResolvedValueOnce(makeSub({ autoLog: false }))
+    const wrapper = mountSheet(makeSub({ autoLog: true }))
+    await flushPromises()
+    await wrapper.find('[data-testid="autolog-toggle"]').setValue(false)
+    await wrapper.find('[data-testid="update-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockUpdateSubscription).toHaveBeenCalledWith(
+      'sub-1',
+      expect.objectContaining({ autoLog: false }),
+    )
+  })
+
   // ── Delete flow ───────────────────────────────────────────────
   it('renders Delete Subscription button', () => {
     const wrapper = mountSheet()
@@ -351,5 +407,21 @@ describe('EditSubscriptionSheet', () => {
     await wrapper.find('[data-testid="delete-cancel-btn"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(false)
+  })
+
+  it('fires exactly one toast (with Undo) when delete is confirmed', async () => {
+    _mockDeleteSubscription.mockResolvedValueOnce(undefined)
+    const wrapper = mountSheet()
+    await wrapper.find('[data-testid="delete-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="delete-confirm-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockToastShow).toHaveBeenCalledTimes(1)
+    expect(_mockToastShow).toHaveBeenCalledWith(
+      'Recurring item deleted',
+      'success',
+      5000,
+      expect.objectContaining({ label: 'Undo' }),
+    )
   })
 })

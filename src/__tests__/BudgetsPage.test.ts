@@ -61,8 +61,10 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 // ── Toast store mock ──────────────────────────────────────────
+const _mockToastShow = vi.fn()
+
 vi.mock('@/stores/toast', () => ({
-  useToastStore: () => reactive({ show: vi.fn() }),
+  useToastStore: () => reactive({ show: _mockToastShow }),
 }))
 
 // ── Router ────────────────────────────────────────────────────
@@ -105,6 +107,7 @@ describe('BudgetsPage', () => {
     _mockIsLoading.value = true
     _mockError.value = null
     vi.clearAllMocks()
+    _mockToastShow.mockReset()
     _mockLoadBudgets.mockImplementation(async () => { _mockIsLoading.value = false })
     document.body.innerHTML = ''
   })
@@ -209,5 +212,17 @@ describe('BudgetsPage', () => {
     mountPage()
     await flushPromises()
     expect(_mockLoadBudgets).toHaveBeenCalled()
+  })
+
+  it('does NOT fire a page-level toast when the deleted event is emitted (sheet handles it)', async () => {
+    // The page's onDeleted handler only clears state and invalidates; the sheet fires the toast
+    _mockBudgets.value = [makeBudget()]
+    const wrapper = mountPage()
+    await flushPromises()
+    // Simulate the edit sheet emitting 'deleted'
+    const editSheet = wrapper.findComponent({ name: 'EditBudgetSheet' })
+    editSheet.vm.$emit('deleted')
+    await flushPromises()
+    expect(_mockToastShow).not.toHaveBeenCalled()
   })
 })

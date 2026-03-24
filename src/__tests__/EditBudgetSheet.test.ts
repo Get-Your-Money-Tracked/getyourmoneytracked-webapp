@@ -21,13 +21,22 @@ vi.mock('@/lib/urql', () => ({
 // ── Store mock ────────────────────────────────────────────────
 const _mockUpdateBudget = vi.fn()
 const _mockDeleteBudget = vi.fn()
+const _mockCreateBudget = vi.fn()
 
 vi.mock('@/stores/budgets', () => ({
   useBudgetsStore: () =>
     reactive({
       updateBudget: _mockUpdateBudget,
       deleteBudget: _mockDeleteBudget,
+      createBudget: _mockCreateBudget,
     }),
+}))
+
+// ── Toast store mock ──────────────────────────────────────────
+const _mockToastShow = vi.fn()
+
+vi.mock('@/stores/toast', () => ({
+  useToastStore: () => reactive({ show: _mockToastShow }),
 }))
 
 function makeBudget(overrides: Partial<Budget> = {}): Budget {
@@ -63,6 +72,7 @@ describe('EditBudgetSheet', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    document.body.innerHTML = ''
   })
 
   it('renders sheet when open is true', () => {
@@ -246,5 +256,21 @@ describe('EditBudgetSheet', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="update-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Server error')
+  })
+
+  it('fires exactly one toast (with Undo) when delete is confirmed', async () => {
+    _mockDeleteBudget.mockResolvedValueOnce(undefined)
+    const wrapper = mountSheet()
+    await wrapper.find('[data-testid="delete-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="delete-confirm-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockToastShow).toHaveBeenCalledTimes(1)
+    expect(_mockToastShow).toHaveBeenCalledWith(
+      'Budget deleted',
+      'success',
+      5000,
+      expect.objectContaining({ label: 'Undo' }),
+    )
   })
 })

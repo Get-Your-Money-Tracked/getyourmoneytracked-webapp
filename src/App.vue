@@ -2,13 +2,17 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useResponsive } from '@/composables/useResponsive'
+import { invalidateDashboard } from '@/composables/useDashboardRefresh'
 import AppLoader from '@/components/common/AppLoader.vue'
 import BottomNav from '@/components/layout/BottomNav.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
 import Toast from '@/components/common/Toast.vue'
 import AddTransactionSheet from '@/components/transactions/AddTransactionSheet.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const { isDesktop } = useResponsive()
 
 // Show the full-screen loader while Firebase resolves auth state (prevents flash of login)
 const showLoader = computed(() => authStore.isLoading)
@@ -27,6 +31,11 @@ const isOnboardingRoute = computed(
 )
 
 const showAddTransaction = ref(false)
+
+function onGlobalTransactionCreated() {
+  showAddTransaction.value = false
+  invalidateDashboard()
+}
 </script>
 
 <template>
@@ -39,14 +48,28 @@ const showAddTransaction = ref(false)
   <div v-if="!showLoader" id="app-root" class="min-h-screen min-h-dvh">
     <!-- Authenticated layout -->
     <template v-if="isAuthRoute">
-      <main class="pb-20" data-testid="app-shell">
-        <RouterView />
-      </main>
-      <BottomNav @add-transaction="showAddTransaction = true" />
+      <!-- Desktop: sidebar + content area -->
+      <template v-if="isDesktop">
+        <Sidebar @new-transaction="showAddTransaction = true" />
+        <main class="ml-64 min-h-screen bg-surface-elevated" data-testid="app-shell">
+          <div class="mx-auto max-w-5xl px-6 py-6">
+            <RouterView />
+          </div>
+        </main>
+      </template>
+
+      <!-- Mobile: full-width + bottom nav -->
+      <template v-else>
+        <main class="pb-20" data-testid="app-shell">
+          <RouterView />
+        </main>
+        <BottomNav @add-transaction="showAddTransaction = true" />
+      </template>
+
       <AddTransactionSheet
         :open="showAddTransaction"
         @close="showAddTransaction = false"
-        @created="showAddTransaction = false"
+        @created="onGlobalTransactionCreated"
       />
     </template>
 
@@ -76,4 +99,5 @@ const showAddTransaction = ref(false)
 .fade-leave-to {
   opacity: 0;
 }
+
 </style>

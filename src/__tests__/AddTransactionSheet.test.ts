@@ -61,6 +61,10 @@ vi.mock('@/stores/auth', () => ({
   useAuthStore: () => reactive({ defaultCurrency: 'USD' }),
 }))
 
+vi.mock('@/graphql/queries/tags', () => ({
+  callUsedTags: vi.fn(async () => ['food', 'travel']),
+}))
+
 // ── Child component stubs ─────────────────────────────────────
 vi.mock('@/components/common/NumPad.vue', () => ({
   default: {
@@ -116,6 +120,16 @@ vi.mock('@/components/common/CategoryPicker.vue', () => ({
 
 vi.mock('lucide-vue-next', () => ({
   Loader2: { template: '<span data-testid="loader2" />' },
+  X: { template: '<span />' },
+}))
+
+vi.mock('@/components/common/TagInput.vue', () => ({
+  default: {
+    name: 'TagInput',
+    props: ['modelValue', 'suggestions'],
+    emits: ['update:modelValue'],
+    template: '<div data-testid="tag-input" />',
+  },
 }))
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -417,7 +431,7 @@ describe('AddTransactionSheet', () => {
     await flushPromises()
     expect(wrapper.find('input[placeholder="Description"]').exists()).toBe(true)
     expect(wrapper.find('textarea[placeholder="Notes"]').exists()).toBe(true)
-    expect(wrapper.find('input[placeholder="Tags (e.g. vacation, food)"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tag-input-component"]').exists()).toBe(true)
   })
 
   it('shows drag handle', () => {

@@ -24,6 +24,7 @@ const _mockEmail = ref('alex@example.com')
 const _mockInitials = ref('AJ')
 const _mockCurrency = ref('USD')
 const _mockLogout = vi.fn()
+const _mockUpdateProfile = vi.fn()
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () =>
@@ -33,6 +34,7 @@ vi.mock('@/stores/auth', () => ({
       get initials() { return _mockInitials.value },
       get defaultCurrency() { return _mockCurrency.value },
       logout: _mockLogout,
+      updateProfile: _mockUpdateProfile,
     }),
 }))
 
@@ -48,6 +50,11 @@ vi.mock('@/stores/theme', () => ({
     }),
 }))
 
+// ── Toast store mock ──────────────────────────────────────────
+vi.mock('@/stores/toast', () => ({
+  useToastStore: () => reactive({ show: vi.fn() }),
+}))
+
 // ── Router ────────────────────────────────────────────────────
 const router = createRouter({
   history: createWebHistory(),
@@ -55,7 +62,9 @@ const router = createRouter({
     { path: '/settings', component: SettingsPage },
     { path: '/categories', component: { template: '<div>Categories</div>' } },
     { path: '/subscriptions', component: { template: '<div>Subscriptions</div>' } },
+    { path: '/accounts', component: { template: '<div>Accounts</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
+    { path: '/tags', component: { template: '<div>Tags</div>' } },
   ],
 })
 
@@ -76,6 +85,7 @@ describe('SettingsPage', () => {
     _mockCurrency.value = 'USD'
     _mockIsDark.value = false
     _mockLogout.mockResolvedValue(undefined)
+    _mockUpdateProfile.mockResolvedValue(undefined)
     document.body.innerHTML = ''
   })
 
@@ -111,6 +121,79 @@ describe('SettingsPage', () => {
     expect(wrapper.find('[data-testid="user-currency"]').text()).toContain('EUR')
   })
 
+  // ── Edit profile expansion ────────────────────────────────────
+  it('does NOT show edit profile form initially', () => {
+    const wrapper = mountPage()
+    expect(wrapper.find('[data-testid="edit-profile-form"]').exists()).toBe(false)
+  })
+
+  it('shows edit profile form when profile card is clicked', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="edit-profile-form"]').exists()).toBe(true)
+  })
+
+  it('edit profile form shows display name input', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    const input = wrapper.find('[data-testid="display-name-input"]')
+    expect(input.exists()).toBe(true)
+    expect((input.element as HTMLInputElement).value).toBe('Alex Johnson')
+  })
+
+  it('edit profile form shows currency selector with available currencies', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    const select = wrapper.find('[data-testid="currency-select"]')
+    expect(select.exists()).toBe(true)
+    const options = select.findAll('option')
+    expect(options.length).toBeGreaterThanOrEqual(10)
+    const optionTexts = options.map((o) => o.text())
+    expect(optionTexts.some((t) => t.includes('USD'))).toBe(true)
+    expect(optionTexts.some((t) => t.includes('EUR'))).toBe(true)
+    expect(optionTexts.some((t) => t.includes('GBP'))).toBe(true)
+    expect(optionTexts.some((t) => t.includes('BRL'))).toBe(true)
+  })
+
+  it('shows validation error when name is too short', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    const input = wrapper.find('[data-testid="display-name-input"]')
+    await input.setValue('A')
+    await wrapper.find('[data-testid="edit-profile-save-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="name-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="name-error"]').text()).toContain('2 characters')
+    expect(_mockUpdateProfile).not.toHaveBeenCalled()
+  })
+
+  it('calls updateProfile with valid name and currency on save', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    const input = wrapper.find('[data-testid="display-name-input"]')
+    await input.setValue('Jane Doe')
+    const select = wrapper.find('[data-testid="currency-select"]')
+    await select.setValue('EUR')
+    await wrapper.find('[data-testid="edit-profile-save-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockUpdateProfile).toHaveBeenCalledWith('Jane Doe', 'EUR')
+  })
+
+  it('closes edit profile form on cancel', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="user-profile-card"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="edit-profile-form"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="edit-profile-cancel-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="edit-profile-form"]').exists()).toBe(false)
+  })
+
   // ── Menu items ────────────────────────────────────────────────
   it('renders Manage Categories button', () => {
     const wrapper = mountPage()
@@ -118,10 +201,34 @@ describe('SettingsPage', () => {
     expect(wrapper.find('[data-testid="manage-categories-btn"]').text()).toContain('Manage Categories')
   })
 
+  it('renders Manage Accounts button', () => {
+    const wrapper = mountPage()
+    expect(wrapper.find('[data-testid="manage-accounts-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="manage-accounts-btn"]').text()).toContain('Manage Accounts')
+  })
+
   it('renders Manage Subscriptions button', () => {
     const wrapper = mountPage()
     expect(wrapper.find('[data-testid="manage-subscriptions-btn"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="manage-subscriptions-btn"]').text()).toContain('Manage Subscriptions')
+  })
+
+  it('renders Manage Tags button', () => {
+    const wrapper = mountPage()
+    expect(wrapper.find('[data-testid="manage-tags-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="manage-tags-btn"]').text()).toContain('Manage Tags')
+  })
+
+  it('navigates to /tags when Manage Tags is clicked', async () => {
+    await router.push('/settings')
+    await router.isReady()
+    const wrapper = mount(SettingsPage, {
+      global: { plugins: [createPinia(), router] },
+      attachTo: document.body,
+    })
+    await wrapper.find('[data-testid="manage-tags-btn"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/tags')
   })
 
   it('renders Dark Mode toggle', () => {
@@ -140,13 +247,16 @@ describe('SettingsPage', () => {
     expect(wrapper.text()).toContain('Settings')
   })
 
-  it('renders app footer', () => {
+  it('renders app footer with bug report link', () => {
     const wrapper = mountPage()
-    expect(wrapper.find('[data-testid="app-footer"]').text()).toContain('GetYourMoneyTracked')
-    expect(wrapper.find('[data-testid="app-footer"]').text()).toContain('Version 1.0.0')
+    const footer = wrapper.find('[data-testid="app-footer"]')
+    expect(footer.text()).toContain('GetYourMoneyTracked')
+    expect(footer.text()).toContain('Version 1.0.0')
+    expect(footer.find('[data-testid="report-bug-link"]').exists()).toBe(true)
+    expect(footer.find('[data-testid="report-bug-link"]').text()).toContain('Report a bug')
   })
 
-  // ── Dark mode toggle (Story 10.2) ─────────────────────────────
+  // ── Dark mode toggle ──────────────────────────────────────────
   it('dark mode toggle has aria-checked=false in light mode', () => {
     _mockIsDark.value = false
     const wrapper = mountPage()
@@ -164,7 +274,6 @@ describe('SettingsPage', () => {
   it('shows Moon icon in light mode', () => {
     _mockIsDark.value = false
     const wrapper = mountPage()
-    // Moon icon has data-testid="theme-icon" and should be present
     expect(wrapper.find('[data-testid="theme-icon"]').exists()).toBe(true)
   })
 
@@ -174,7 +283,7 @@ describe('SettingsPage', () => {
     expect(_mockToggle).toHaveBeenCalledOnce()
   })
 
-  // ── Logout flow (Story 10.1 AC4, AC5) ────────────────────────
+  // ── Logout flow ───────────────────────────────────────────────
   it('does NOT show logout dialog initially', () => {
     const wrapper = mountPage()
     expect(wrapper.find('[data-testid="logout-confirm-dialog"]').exists()).toBe(false)

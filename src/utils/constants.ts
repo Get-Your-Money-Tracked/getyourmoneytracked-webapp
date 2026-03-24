@@ -25,6 +25,11 @@ export const DEFAULT_HISTORY_LIMIT = 12
 /** Default auto-dismiss duration for toast notifications (ms) */
 export const TOAST_DURATION_MS = 3000
 
+// ── Responsive breakpoints ────────────────────────────────────────────────────
+
+/** Viewport width (px) at or above which the desktop layout is used */
+export const DESKTOP_BREAKPOINT = 768
+
 // ── Display ───────────────────────────────────────────────────────────────────
 
 /** Max characters before truncating category name in chips */
@@ -40,6 +45,25 @@ export const SIGNUP_TIMESTAMP_KEY = 'signup_timestamp'
 
 /** Number of days after signup during which page tips are shown */
 export const TIP_VISIBLE_DAYS = 7
+
+// ── Currencies ────────────────────────────────────────────────────────────────
+
+/** Supported currencies for selection in the app */
+export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'CAD', symbol: 'CA$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
+]
+
+/** localStorage key for persisting the user's display name override */
+export const DISPLAY_NAME_KEY = 'gymt_display_name'
 
 /** Page-specific tip messages shown to new users (< 7 days since signup) */
 export const PAGE_TIPS: Record<string, string> = {

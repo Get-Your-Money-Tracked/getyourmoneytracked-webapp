@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-vue-next'
 import type { Category } from '@/types'
 import { useBudgetsStore } from '@/stores/budgets'
 import { getCurrencySymbol } from '@/utils/currency'
+import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
   open: boolean
@@ -86,144 +87,100 @@ async function handleSubmit() {
     isSubmitting.value = false
   }
 }
-
-// ── Swipe-to-dismiss ──────────────────────────────────────────
-let touchStartY = 0
-function onTouchStart(e: TouchEvent) { touchStartY = e.touches[0].clientY }
-function onTouchEnd(e: TouchEvent) {
-  if (e.changedTouches[0].clientY - touchStartY > 80) emit('close')
-}
 </script>
 
 <template>
-  <!-- Backdrop -->
-  <Transition name="backdrop">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 bg-black/40"
-      aria-hidden="true"
-      @click="$emit('close')"
-    />
-  </Transition>
-
-  <!-- Sheet -->
-  <Transition name="sheet">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
-      :style="{ boxShadow: 'var(--shadow-sheet)' }"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Create Budget"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
-    >
-      <div class="px-5 pb-8 pt-4">
-        <!-- Drag handle -->
-        <div class="mb-5 flex justify-center">
-          <div class="h-1 w-8 rounded-full bg-border" aria-hidden="true" />
-        </div>
-
-        <!-- Title -->
-        <h2 class="text-section-title mb-5 font-semibold text-text-primary">Create Budget</h2>
-
-        <!-- Category picker -->
-        <div class="mb-4">
-          <label
-            for="create-budget-category"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Category
-          </label>
-          <div class="relative">
-            <select
-              id="create-budget-category"
-              v-model="selectedCategoryId"
-              class="h-12 w-full appearance-none rounded-xl border border-border bg-surface px-4 pr-10 text-body text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-              data-testid="category-select"
-            >
-              <option value="" disabled>Select a category</option>
-              <option
-                v-for="cat in availableCategories"
-                :key="cat.id"
-                :value="cat.id"
-              >
-                {{ cat.icon ?? '' }} {{ cat.name }}
-              </option>
-              <!-- Disabled: already-budgeted categories -->
-              <option
-                v-for="cat in categories.filter(c => budgetsStore.budgetedCategoryIds.has(c.id))"
-                :key="`budgeted-${cat.id}`"
-                :value="cat.id"
-                disabled
-                class="opacity-50"
-              >
-                {{ cat.icon ?? '' }} {{ cat.name }} (budgeted)
-              </option>
-            </select>
-            <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </span>
-          </div>
-        </div>
-
-        <!-- Amount input -->
-        <div class="mb-6">
-          <label
-            for="create-budget-amount"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Monthly Limit
-          </label>
-          <div
-            class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
-            :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary'"
-          >
-            <span class="pl-4 pr-1 text-body text-text-muted">{{ currencySymbol }}</span>
-            <input
-              id="create-budget-amount"
-              v-model="amountInput"
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="0.00"
-              class="h-full flex-1 bg-transparent pr-4 text-right text-section-title font-bold tabular-nums text-text-primary outline-none"
-              data-testid="amount-input"
-              @blur="validateAmount"
-            />
-          </div>
-          <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
-            {{ amountError }}
-          </p>
-        </div>
-
-        <!-- Submit error -->
-        <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert" data-testid="submit-error">
-          {{ submitError }}
-        </p>
-
-        <!-- Create button -->
-        <button
-          type="button"
-          class="flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white transition-opacity disabled:opacity-50"
-          :style="{ backgroundColor: 'var(--color-primary)' }"
-          :disabled="!isFormValid || isSubmitting"
-          data-testid="create-submit-btn"
-          @click="handleSubmit"
+  <ResponsiveSheet :open="open" title="Create Budget" test-id="create-budget-sheet" @close="$emit('close')">
+    <div class="px-5 pb-8 pt-4">
+      <!-- Category picker -->
+      <div class="mb-4">
+        <label
+          for="create-budget-category"
+          class="text-caption mb-1 block font-medium text-text-secondary"
         >
-          <Loader2 v-if="isSubmitting" :size="18" class="animate-spin" />
-          {{ isSubmitting ? 'Creating...' : 'Create Budget' }}
-        </button>
+          Category
+        </label>
+        <div class="relative">
+          <select
+            id="create-budget-category"
+            v-model="selectedCategoryId"
+            class="h-12 w-full appearance-none rounded-xl border border-border bg-surface px-4 pr-10 text-body text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
+            data-testid="category-select"
+          >
+            <option value="" disabled>Select a category</option>
+            <option
+              v-for="cat in availableCategories"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ cat.icon ?? '' }} {{ cat.name }}
+            </option>
+            <!-- Disabled: already-budgeted categories -->
+            <option
+              v-for="cat in categories.filter(c => budgetsStore.budgetedCategoryIds.has(c.id))"
+              :key="`budgeted-${cat.id}`"
+              :value="cat.id"
+              disabled
+              class="opacity-50"
+            >
+              {{ cat.icon ?? '' }} {{ cat.name }} (budgeted)
+            </option>
+          </select>
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
       </div>
-    </div>
-  </Transition>
-</template>
 
-<style scoped>
-.backdrop-enter-active, .backdrop-leave-active { transition: opacity 0.2s ease; }
-.backdrop-enter-from, .backdrop-leave-to { opacity: 0; }
-.sheet-enter-active, .sheet-leave-active { transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
-.sheet-enter-from, .sheet-leave-to { transform: translateY(100%); }
-</style>
+      <!-- Amount input -->
+      <div class="mb-6">
+        <label
+          for="create-budget-amount"
+          class="text-caption mb-1 block font-medium text-text-secondary"
+        >
+          Monthly Limit
+        </label>
+        <div
+          class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
+          :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary'"
+        >
+          <span class="pl-4 pr-1 text-body text-text-muted">{{ currencySymbol }}</span>
+          <input
+            id="create-budget-amount"
+            v-model="amountInput"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="0.00"
+            class="h-full flex-1 bg-transparent pr-4 text-right text-section-title font-bold tabular-nums text-text-primary outline-none"
+            data-testid="amount-input"
+            @blur="validateAmount"
+          />
+        </div>
+        <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
+          {{ amountError }}
+        </p>
+      </div>
+
+      <!-- Submit error -->
+      <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert" data-testid="submit-error">
+        {{ submitError }}
+      </p>
+
+      <!-- Create button -->
+      <button
+        type="button"
+        class="flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white transition-opacity disabled:opacity-50"
+        :style="{ backgroundColor: 'var(--color-primary)' }"
+        :disabled="!isFormValid || isSubmitting"
+        data-testid="create-submit-btn"
+        @click="handleSubmit"
+      >
+        <Loader2 v-if="isSubmitting" :size="18" class="animate-spin" />
+        {{ isSubmitting ? 'Creating...' : 'Create Budget' }}
+      </button>
+    </div>
+  </ResponsiveSheet>
+</template>

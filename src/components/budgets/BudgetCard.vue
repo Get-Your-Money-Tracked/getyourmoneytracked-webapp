@@ -37,7 +37,7 @@ function handleClick() {
 <template>
   <button
     type="button"
-    class="block w-full px-4 py-4 text-left transition-colors duration-150 hover:bg-surface-elevated"
+    class="block w-full px-4 py-4 text-left transition-all duration-150 hover:bg-surface-elevated active:scale-[0.98]"
     :data-testid="`budget-card-${budget.id}`"
     @click="handleClick"
   >

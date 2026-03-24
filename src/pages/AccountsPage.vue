@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Wallet } from 'lucide-vue-next'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAuthStore } from '@/stores/auth'
+import { invalidateDashboard } from '@/composables/useDashboardRefresh'
 import AccountCard from '@/components/accounts/AccountCard.vue'
 import TotalBalanceCard from '@/components/accounts/TotalBalanceCard.vue'
 import AddAccountSheet from '@/components/accounts/AddAccountSheet.vue'
@@ -48,14 +49,17 @@ function closeEditSheet() {
 
 function onAccountCreated() {
   // Sheet closes itself via emit('close') — accounts already updated in store
+  invalidateDashboard()
 }
 
 function onAccountSaved() {
   // Sheet closes itself
+  invalidateDashboard()
 }
 
 function onAccountArchived() {
   // Account removed from list by store
+  invalidateDashboard()
 }
 
 // ── Load on mount ─────────────────────────────────────────────
@@ -70,7 +74,7 @@ const SKELETON_COUNT = 3
 <template>
   <div class="min-h-screen bg-surface-elevated">
     <!-- Page content -->
-    <div class="mx-auto max-w-md px-4 pb-28 pt-6">
+    <div class="mx-auto max-w-md md:max-w-4xl px-4 pb-28 pt-6">
       <!-- Page title -->
       <h1 class="text-page-title mb-5 font-bold text-text-primary">Accounts</h1>
 
@@ -123,7 +127,7 @@ const SKELETON_COUNT = 3
         </div>
 
         <!-- Accounts -->
-        <div class="mb-4 flex flex-col gap-3">
+        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <AccountCard
             v-for="account in accountsStore.accounts"
             :key="account.id"

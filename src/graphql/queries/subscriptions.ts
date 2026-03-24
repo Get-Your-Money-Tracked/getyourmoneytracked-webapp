@@ -142,6 +142,7 @@ export interface CreateSubscriptionInput {
   frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
   dayOfMonth?: number | null
   startDate?: string | null
+  autoLog?: boolean
 }
 
 export interface UpdateSubscriptionInput {
@@ -152,6 +153,10 @@ export interface UpdateSubscriptionInput {
   frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
   dayOfMonth?: number | null
   isActive?: boolean
+  /** Explicitly set next due date (YYYY-MM-DD). Used after auto-logging to advance the date. */
+  nextDueDate?: string | null
+  /** Toggle auto-log flag. */
+  autoLog?: boolean
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────

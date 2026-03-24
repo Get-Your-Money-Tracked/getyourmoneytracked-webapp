@@ -56,6 +56,7 @@ const DASHBOARD_QUERY = `
       upcomingBills {
         id
         name
+        type
         amount
         currency
         categoryId
@@ -63,6 +64,7 @@ const DASHBOARD_QUERY = `
         frequency
         nextDueDate
         isActive
+        autoLog
       }
       budgetProgress {
         budgetId

@@ -5,6 +5,8 @@ import type { Budget } from '@/types'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import { formatCurrency } from '@/utils/currency'
 import { useBudgetsStore } from '@/stores/budgets'
+import { useToastStore } from '@/stores/toast'
+import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
   open: boolean
@@ -19,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const budgetsStore = useBudgetsStore()
+const toastStore = useToastStore()
 
 // ── Form state ────────────────────────────────────────────────
 const amountInput = ref<string>('')
@@ -120,11 +123,28 @@ function cancelDelete() {
 async function confirmDelete() {
   if (!props.budget) return
   isDeleting.value = true
+  // Snapshot for undo before deleting
+  const snapshot = { ...props.budget }
   try {
     await budgetsStore.deleteBudget(props.budget.id)
     showDeleteConfirm.value = false
     emit('deleted')
     emit('close')
+    toastStore.show(
+      'Budget deleted',
+      'success',
+      5000,
+      {
+        label: 'Undo',
+        callback: () => {
+          budgetsStore.createBudget({
+            categoryId: snapshot.category.id,
+            amount: snapshot.amount,
+            month: snapshot.month,
+          }).catch(() => {/* undo failed silently */})
+        },
+      },
+    )
   } catch (e: unknown) {
     updateError.value = (e as Error).message ?? 'Failed to delete budget.'
     showDeleteConfirm.value = false
@@ -132,17 +152,10 @@ async function confirmDelete() {
     isDeleting.value = false
   }
 }
-
-// ── Swipe-to-dismiss ──────────────────────────────────────────
-let touchStartY = 0
-function onTouchStart(e: TouchEvent) { touchStartY = e.touches[0].clientY }
-function onTouchEnd(e: TouchEvent) {
-  if (e.changedTouches[0].clientY - touchStartY > 80) emit('close')
-}
 </script>
 
 <template>
-  <!-- Delete confirmation dialog -->
+  <!-- Delete confirmation dialog (above the sheet) -->
   <Transition name="backdrop">
     <div
       v-if="showDeleteConfirm"
@@ -185,151 +198,119 @@ function onTouchEnd(e: TouchEvent) {
     </div>
   </Transition>
 
-  <!-- Backdrop -->
-  <Transition name="backdrop">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 bg-black/40"
-      aria-hidden="true"
-      @click="$emit('close')"
-    />
-  </Transition>
-
-  <!-- Sheet -->
-  <Transition name="sheet">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
-      :style="{ boxShadow: 'var(--shadow-sheet)' }"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit Budget"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
-    >
-      <div class="px-5 pb-8 pt-4">
-        <!-- Drag handle -->
-        <div class="mb-5 flex justify-center">
-          <div class="h-1 w-8 rounded-full bg-border" aria-hidden="true" />
-        </div>
-
-        <!-- Title -->
-        <h2 class="text-section-title mb-5 font-semibold text-text-primary">Edit Budget</h2>
-
-        <!-- Category (read-only) -->
-        <div class="mb-4">
-          <label class="text-caption mb-1 block font-medium text-text-secondary">Category</label>
-          <div
-            class="flex h-12 cursor-not-allowed items-center gap-2 rounded-xl bg-surface-muted px-4 opacity-70"
-            data-testid="readonly-category"
-          >
-            <Lock :size="14" class="text-text-muted" aria-hidden="true" />
-            <span class="text-body">{{ budget?.category.icon ?? '' }} {{ budget?.category.name }}</span>
-          </div>
-        </div>
-
-        <!-- Month (read-only) -->
-        <div class="mb-4">
-          <label class="text-caption mb-1 block font-medium text-text-secondary">Month</label>
-          <div
-            class="flex h-12 cursor-not-allowed items-center gap-2 rounded-xl bg-surface-muted px-4 opacity-70"
-            data-testid="readonly-month"
-          >
-            <Lock :size="14" class="text-text-muted" aria-hidden="true" />
-            <span class="text-body">{{ formattedMonth }}</span>
-          </div>
-        </div>
-
-        <!-- Current spending (read-only info) -->
-        <div class="mb-4">
-          <label class="text-caption mb-1 block font-medium text-text-secondary">Current Spending</label>
-          <div class="rounded-xl bg-surface-muted p-3" data-testid="current-spending">
-            <p class="text-body font-medium tabular-nums">
-              <span>{{ formattedSpent }}</span>
-              <span class="text-text-muted"> of {{ formattedAmount }}</span>
-              <span class="ml-1 text-caption text-text-muted">({{ Math.round(spentPercent) }}%)</span>
-            </p>
-            <div class="mt-2">
-              <ProgressBar :percent="spentPercent" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Amount input -->
-        <div class="mb-4">
-          <label
-            for="edit-budget-amount"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Monthly Limit
-          </label>
-          <div
-            class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
-            :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary'"
-          >
-            <span class="pl-4 pr-1 text-body text-text-muted">$</span>
-            <input
-              id="edit-budget-amount"
-              v-model="amountInput"
-              type="number"
-              step="0.01"
-              min="0.01"
-              class="h-full flex-1 bg-transparent pr-4 text-right text-section-title font-bold tabular-nums text-text-primary outline-none"
-              data-testid="edit-amount-input"
-              @blur="validateAmount"
-            />
-          </div>
-          <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
-            {{ amountError }}
-          </p>
-        </div>
-
-        <!-- Over-budget warning -->
+  <ResponsiveSheet :open="open" title="Edit Budget" test-id="edit-budget-sheet" @close="$emit('close')">
+    <div class="px-5 pb-8 pt-4">
+      <!-- Category (read-only) -->
+      <div class="mb-4">
+        <label class="text-caption mb-1 block font-medium text-text-secondary">Category</label>
         <div
-          v-if="isOverBudgetWarning"
-          class="mb-4 flex items-center gap-2"
-          data-testid="over-budget-warning"
+          class="flex h-12 cursor-not-allowed items-center gap-2 rounded-xl bg-surface-muted px-4 opacity-70"
+          data-testid="readonly-category"
         >
-          <AlertTriangle :size="14" class="text-warning" aria-hidden="true" />
-          <span class="text-caption text-warning">This limit is already exceeded.</span>
+          <Lock :size="14" class="text-text-muted" aria-hidden="true" />
+          <span class="text-body">{{ budget?.category.icon ?? '' }} {{ budget?.category.name }}</span>
         </div>
-
-        <!-- Error message -->
-        <p v-if="updateError" class="text-caption mb-3 text-danger" role="alert" data-testid="update-error">
-          {{ updateError }}
-        </p>
-
-        <!-- Update button -->
-        <button
-          type="button"
-          class="mb-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white transition-opacity disabled:opacity-50"
-          :style="{ backgroundColor: 'var(--color-primary)' }"
-          :disabled="!isFormValid || isUpdating"
-          data-testid="update-btn"
-          @click="handleUpdate"
-        >
-          <Loader2 v-if="isUpdating" :size="18" class="animate-spin" />
-          {{ isUpdating ? 'Updating...' : 'Update' }}
-        </button>
-
-        <!-- Delete button -->
-        <button
-          type="button"
-          class="text-body h-10 w-full rounded-xl font-medium transition-colors hover:bg-danger/10"
-          :style="{ color: 'var(--color-danger)' }"
-          data-testid="delete-btn"
-          @click="requestDelete"
-        >
-          Delete Budget
-        </button>
       </div>
+
+      <!-- Month (read-only) -->
+      <div class="mb-4">
+        <label class="text-caption mb-1 block font-medium text-text-secondary">Month</label>
+        <div
+          class="flex h-12 cursor-not-allowed items-center gap-2 rounded-xl bg-surface-muted px-4 opacity-70"
+          data-testid="readonly-month"
+        >
+          <Lock :size="14" class="text-text-muted" aria-hidden="true" />
+          <span class="text-body">{{ formattedMonth }}</span>
+        </div>
+      </div>
+
+      <!-- Current spending (read-only info) -->
+      <div class="mb-4">
+        <label class="text-caption mb-1 block font-medium text-text-secondary">Current Spending</label>
+        <div class="rounded-xl bg-surface-muted p-3" data-testid="current-spending">
+          <p class="text-body font-medium tabular-nums">
+            <span>{{ formattedSpent }}</span>
+            <span class="text-text-muted"> of {{ formattedAmount }}</span>
+            <span class="ml-1 text-caption text-text-muted">({{ Math.round(spentPercent) }}%)</span>
+          </p>
+          <div class="mt-2">
+            <ProgressBar :percent="spentPercent" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Amount input -->
+      <div class="mb-4">
+        <label
+          for="edit-budget-amount"
+          class="text-caption mb-1 block font-medium text-text-secondary"
+        >
+          Monthly Limit
+        </label>
+        <div
+          class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
+          :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary'"
+        >
+          <span class="pl-4 pr-1 text-body text-text-muted">$</span>
+          <input
+            id="edit-budget-amount"
+            v-model="amountInput"
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="h-full flex-1 bg-transparent pr-4 text-right text-section-title font-bold tabular-nums text-text-primary outline-none"
+            data-testid="edit-amount-input"
+            @blur="validateAmount"
+          />
+        </div>
+        <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
+          {{ amountError }}
+        </p>
+      </div>
+
+      <!-- Over-budget warning -->
+      <div
+        v-if="isOverBudgetWarning"
+        class="mb-4 flex items-center gap-2"
+        data-testid="over-budget-warning"
+      >
+        <AlertTriangle :size="14" class="text-warning" aria-hidden="true" />
+        <span class="text-caption text-warning">This limit is already exceeded.</span>
+      </div>
+
+      <!-- Error message -->
+      <p v-if="updateError" class="text-caption mb-3 text-danger" role="alert" data-testid="update-error">
+        {{ updateError }}
+      </p>
+
+      <!-- Update button -->
+      <button
+        type="button"
+        class="mb-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-medium text-white transition-opacity disabled:opacity-50"
+        :style="{ backgroundColor: 'var(--color-primary)' }"
+        :disabled="!isFormValid || isUpdating"
+        data-testid="update-btn"
+        @click="handleUpdate"
+      >
+        <Loader2 v-if="isUpdating" :size="18" class="animate-spin" />
+        {{ isUpdating ? 'Updating...' : 'Update' }}
+      </button>
+
+      <!-- Delete button -->
+      <button
+        type="button"
+        class="text-body h-10 w-full rounded-xl font-medium transition-colors hover:bg-danger/10"
+        :style="{ color: 'var(--color-danger)' }"
+        data-testid="delete-btn"
+        @click="requestDelete"
+      >
+        Delete Budget
+      </button>
     </div>
-  </Transition>
+  </ResponsiveSheet>
 </template>
 
 <style scoped>
 .backdrop-enter-active, .backdrop-leave-active { transition: opacity 0.2s ease; }
 .backdrop-enter-from, .backdrop-leave-to { opacity: 0; }
-.sheet-enter-active, .sheet-leave-active { transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
-.sheet-enter-from, .sheet-leave-to { transform: translateY(100%); }
 </style>

@@ -57,13 +57,17 @@ const formattedAmount = computed(() =>
   formatCurrency(props.subscription.amount, props.currency),
 )
 
+const isIncome = computed(() => props.subscription.type === 'INCOME')
+const amountColorClass = computed(() => isIncome.value ? 'text-primary' : 'text-danger')
+const amountPrefix = computed(() => isIncome.value ? '+' : '-')
+
 // ── Category color ────────────────────────────────────────────
 const categoryColor = computed(() => props.subscription.category?.color ?? '#10b981')
 </script>
 
 <template>
   <div
-    class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-elevated"
+    class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-all duration-150 hover:bg-surface-elevated active:scale-[0.98]"
     :data-testid="`subscription-item-${subscription.id}`"
     role="button"
     tabindex="0"
@@ -86,8 +90,8 @@ const categoryColor = computed(() => props.subscription.category?.color ?? '#10b
         <span class="text-card-title truncate font-medium text-text-primary">
           {{ subscription.name }}
         </span>
-        <span class="ml-2 shrink-0 text-body font-medium tabular-nums text-text-primary">
-          {{ formattedAmount }}<span class="text-caption text-text-muted">{{ frequencyLabel }}</span>
+        <span class="ml-2 shrink-0 text-body font-medium tabular-nums" :class="amountColorClass">
+          {{ amountPrefix }}{{ formattedAmount }}<span class="text-caption text-text-muted">{{ frequencyLabel }}</span>
         </span>
       </div>
 

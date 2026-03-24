@@ -2,7 +2,9 @@
 import { ref, watch, computed } from 'vue'
 import { useCategoriesStore } from '@/stores/categories'
 import { useTransactionsStore } from '@/stores/transactions'
+import { useToastStore } from '@/stores/toast'
 import type { Category } from '@/types'
+import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
   open: boolean
@@ -17,6 +19,7 @@ const emit = defineEmits<{
 
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
+const toastStore = useToastStore()
 
 // ── Form state ────────────────────────────────────────────────
 const name = ref('')
@@ -122,11 +125,29 @@ function cancelDelete() {
 async function confirmDelete() {
   if (!props.category) return
   isDeleting.value = true
+  // Snapshot for undo before deleting
+  const snapshot = { ...props.category }
   try {
     await categoriesStore.deleteCategory(props.category.id)
     showDeleteConfirm.value = false
     emit('deleted')
     emit('close')
+    toastStore.show(
+      'Category deleted',
+      'success',
+      5000,
+      {
+        label: 'Undo',
+        callback: () => {
+          categoriesStore.createCategory({
+            name: snapshot.name,
+            icon: snapshot.icon,
+            color: snapshot.color,
+            parentId: snapshot.parentId,
+          }).catch(() => {/* undo failed silently */})
+        },
+      },
+    )
   } catch (e: unknown) {
     submitError.value = (e as Error).message ?? 'Failed to delete category.'
     showDeleteConfirm.value = false
@@ -134,24 +155,10 @@ async function confirmDelete() {
     isDeleting.value = false
   }
 }
-
-// ── Swipe-to-dismiss ──────────────────────────────────────────
-let touchStartY = 0
-
-function onTouchStart(e: TouchEvent) {
-  touchStartY = e.touches[0].clientY
-}
-
-function onTouchEnd(e: TouchEvent) {
-  const delta = e.changedTouches[0].clientY - touchStartY
-  if (delta > 80) {
-    emit('close')
-  }
-}
 </script>
 
 <template>
-  <!-- Delete confirmation dialog -->
+  <!-- Delete confirmation dialog (above the sheet) -->
   <Transition name="backdrop">
     <div
       v-if="showDeleteConfirm"
@@ -192,176 +199,136 @@ function onTouchEnd(e: TouchEvent) {
     </div>
   </Transition>
 
-  <!-- Backdrop -->
-  <Transition name="backdrop">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 bg-black/40"
-      aria-hidden="true"
-      @click="$emit('close')"
-    />
-  </Transition>
-
-  <!-- Sheet -->
-  <Transition name="sheet">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
-      :style="{ boxShadow: 'var(--shadow-sheet)' }"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="category ? `Edit ${category.name}` : 'Edit Category'"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
-    >
-      <div class="px-5 pb-8 pt-4">
-        <!-- Drag handle -->
-        <div class="mb-5 flex justify-center">
-          <div class="h-1 w-8 rounded-full bg-border" aria-hidden="true" />
-        </div>
-
-        <!-- Title -->
-        <h2 class="text-section-title mb-5 font-semibold text-text-primary">Edit Category</h2>
-
-        <!-- Name -->
-        <div class="mb-4">
-          <label
-            for="edit-category-name"
-            class="text-caption mb-1 block font-medium text-text-secondary"
-          >
-            Name
-          </label>
-          <input
-            id="edit-category-name"
-            v-model="name"
-            type="text"
-            class="h-12 w-full rounded-xl bg-surface-muted px-4 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-            placeholder="Category name"
-            autocomplete="off"
-            @blur="validateName"
-          />
-          <p v-if="nameError" class="text-caption mt-1 text-danger" role="alert">
-            {{ nameError }}
-          </p>
-          <p v-else-if="nameWarning" class="text-caption mt-1 text-warning">
-            {{ nameWarning }}
-          </p>
-        </div>
-
-        <!-- Icon picker -->
-        <div class="mb-4">
-          <label class="text-caption mb-2 block font-medium text-text-secondary">
-            Icon
-          </label>
-          <div class="grid grid-cols-5 gap-2">
-            <button
-              v-for="icon in ICON_OPTIONS"
-              :key="icon"
-              type="button"
-              class="flex h-11 w-full items-center justify-center rounded-xl text-xl transition-colors duration-150"
-              :class="
-                selectedIcon === icon
-                  ? 'ring-2 ring-primary bg-primary/10'
-                  : 'bg-surface-muted hover:bg-surface-elevated'
-              "
-              :aria-pressed="selectedIcon === icon"
-              :aria-label="`Select icon ${icon}`"
-              @click="selectedIcon = selectedIcon === icon ? null : icon"
-            >
-              {{ icon }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Color picker -->
-        <div class="mb-4">
-          <label class="text-caption mb-2 block font-medium text-text-secondary">
-            Color
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="color in PRESET_COLORS"
-              :key="color"
-              type="button"
-              class="h-8 w-8 flex-shrink-0 rounded-full transition-all duration-150"
-              :style="{ backgroundColor: color }"
-              :class="
-                selectedColor === color
-                  ? 'ring-2 ring-offset-2 ring-primary scale-110'
-                  : 'opacity-80 hover:opacity-100'
-              "
-              :aria-pressed="selectedColor === color"
-              :aria-label="`Select color ${color}`"
-              @click="selectedColor = color"
-            />
-          </div>
-        </div>
-
-        <!-- Read-only parent indicator (if sub-category) -->
-        <div v-if="category?.parentId" class="mb-4">
-          <p class="text-caption text-text-muted">
-            Sub-category (parent cannot be changed)
-          </p>
-        </div>
-
-        <!-- Error message -->
-        <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert">
-          {{ submitError }}
-        </p>
-
-        <!-- Save button -->
-        <button
-          type="button"
-          class="mb-4 h-12 w-full rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-          :style="{ backgroundColor: 'var(--color-primary)' }"
-          :disabled="isSubmitting"
-          @click="handleSave"
+  <ResponsiveSheet
+    :open="open"
+    :title="category ? `Edit ${category.name}` : 'Edit Category'"
+    test-id="edit-category-sheet"
+    @close="$emit('close')"
+  >
+    <div class="px-5 pb-8 pt-4">
+      <!-- Name -->
+      <div class="mb-4">
+        <label
+          for="edit-category-name"
+          class="text-caption mb-1 block font-medium text-text-secondary"
         >
-          {{ isSubmitting ? 'Saving…' : 'Save' }}
-        </button>
-
-        <!-- Delete button — only for non-default categories -->
-        <template v-if="category && !category.isDefault">
-          <div class="border-t border-border pt-4">
-            <button
-              type="button"
-              class="text-body h-11 w-full rounded-xl border font-medium transition-colors"
-              :style="{
-                borderColor: 'var(--color-danger)',
-                color: 'var(--color-danger)',
-              }"
-              :class="{ 'opacity-50 cursor-not-allowed': hasTransactions }"
-              :disabled="hasTransactions"
-              @click="requestDelete"
-            >
-              Delete Category
-            </button>
-            <p v-if="hasTransactions" class="text-caption mt-2 text-center text-text-muted">
-              Cannot delete a category that has transactions. Reassign or remove them first.
-            </p>
-          </div>
-        </template>
+          Name
+        </label>
+        <input
+          id="edit-category-name"
+          v-model="name"
+          type="text"
+          class="h-12 w-full rounded-xl bg-surface-muted px-4 text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
+          placeholder="Category name"
+          autocomplete="off"
+          @blur="validateName"
+        />
+        <p v-if="nameError" class="text-caption mt-1 text-danger" role="alert">
+          {{ nameError }}
+        </p>
+        <p v-else-if="nameWarning" class="text-caption mt-1 text-warning">
+          {{ nameWarning }}
+        </p>
       </div>
+
+      <!-- Icon picker -->
+      <div class="mb-4">
+        <label class="text-caption mb-2 block font-medium text-text-secondary">
+          Icon
+        </label>
+        <div class="grid grid-cols-5 gap-2">
+          <button
+            v-for="icon in ICON_OPTIONS"
+            :key="icon"
+            type="button"
+            class="flex h-11 w-full items-center justify-center rounded-xl text-xl transition-colors duration-150"
+            :class="
+              selectedIcon === icon
+                ? 'ring-2 ring-primary bg-primary/10'
+                : 'bg-surface-muted hover:bg-surface-elevated'
+            "
+            :aria-pressed="selectedIcon === icon"
+            :aria-label="`Select icon ${icon}`"
+            @click="selectedIcon = selectedIcon === icon ? null : icon"
+          >
+            {{ icon }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Color picker -->
+      <div class="mb-4">
+        <label class="text-caption mb-2 block font-medium text-text-secondary">
+          Color
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="color in PRESET_COLORS"
+            :key="color"
+            type="button"
+            class="h-8 w-8 flex-shrink-0 rounded-full transition-all duration-150"
+            :style="{ backgroundColor: color }"
+            :class="
+              selectedColor === color
+                ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                : 'opacity-80 hover:opacity-100'
+            "
+            :aria-pressed="selectedColor === color"
+            :aria-label="`Select color ${color}`"
+            @click="selectedColor = color"
+          />
+        </div>
+      </div>
+
+      <!-- Read-only parent indicator (if sub-category) -->
+      <div v-if="category?.parentId" class="mb-4">
+        <p class="text-caption text-text-muted">
+          Sub-category (parent cannot be changed)
+        </p>
+      </div>
+
+      <!-- Error message -->
+      <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert">
+        {{ submitError }}
+      </p>
+
+      <!-- Save button -->
+      <button
+        type="button"
+        class="mb-4 h-12 w-full rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
+        :style="{ backgroundColor: 'var(--color-primary)' }"
+        :disabled="isSubmitting"
+        @click="handleSave"
+      >
+        {{ isSubmitting ? 'Saving…' : 'Save' }}
+      </button>
+
+      <!-- Delete button — only for non-default categories -->
+      <template v-if="category && !category.isDefault">
+        <div class="border-t border-border pt-4">
+          <button
+            type="button"
+            class="text-body h-11 w-full rounded-xl border font-medium transition-colors"
+            :style="{
+              borderColor: 'var(--color-danger)',
+              color: 'var(--color-danger)',
+            }"
+            :class="{ 'opacity-50 cursor-not-allowed': hasTransactions }"
+            :disabled="hasTransactions"
+            @click="requestDelete"
+          >
+            Delete Category
+          </button>
+          <p v-if="hasTransactions" class="text-caption mt-2 text-center text-text-muted">
+            Cannot delete a category that has transactions. Reassign or remove them first.
+          </p>
+        </div>
+      </template>
     </div>
-  </Transition>
+  </ResponsiveSheet>
 </template>
 
 <style scoped>
-.backdrop-enter-active,
-.backdrop-leave-active {
-  transition: opacity 0.2s ease;
-}
-.backdrop-enter-from,
-.backdrop-leave-to {
-  opacity: 0;
-}
-
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.sheet-enter-from,
-.sheet-leave-to {
-  transform: translateY(100%);
-}
+.backdrop-enter-active, .backdrop-leave-active { transition: opacity 0.2s ease; }
+.backdrop-enter-from, .backdrop-leave-to { opacity: 0; }
 </style>

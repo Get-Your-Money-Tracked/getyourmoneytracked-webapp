@@ -15,7 +15,7 @@ const hasBills = computed(() => props.bills.length > 0)
   <section v-if="hasBills" class="mt-6" data-testid="upcoming-bills">
     <!-- Section header -->
     <div class="mb-2 px-4">
-      <h2 class="text-card-title font-semibold text-text-primary">Upcoming Bills</h2>
+      <h2 class="text-card-title font-semibold text-text-primary">Upcoming Recurring</h2>
     </div>
 
     <!-- Card -->

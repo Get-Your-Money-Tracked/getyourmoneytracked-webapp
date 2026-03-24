@@ -119,7 +119,7 @@ const hasTransactions = computed(() => props.transactions.length > 0)
           v-for="tx in transactions"
           :key="tx.id"
           type="button"
-          class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted"
+          class="flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:scale-[0.98]"
           :data-testid="`transaction-item-${tx.id}`"
           @click="emit('edit', tx)"
         >

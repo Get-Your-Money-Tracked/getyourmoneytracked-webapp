@@ -56,7 +56,7 @@ describe('Toast component', () => {
   })
 
   it('renders a success toast with message text', async () => {
-    _mockToasts.value = [{ id: 1, message: 'Transaction saved!', variant: 'success' }]
+    _mockToasts.value = [{ id: 1, message: 'Transaction saved!', variant: 'success', duration: 3000 }]
     mountToast()
     await flushPromises()
     expect(document.body.textContent).toContain('Transaction saved!')
@@ -65,14 +65,14 @@ describe('Toast component', () => {
   })
 
   it('renders an error toast', async () => {
-    _mockToasts.value = [{ id: 2, message: 'Something went wrong', variant: 'error' }]
+    _mockToasts.value = [{ id: 2, message: 'Something went wrong', variant: 'error', duration: 3000 }]
     mountToast()
     await flushPromises()
     expect(document.body.textContent).toContain('Something went wrong')
   })
 
   it('renders an info toast', async () => {
-    _mockToasts.value = [{ id: 3, message: 'Tip: swipe to dismiss', variant: 'info' }]
+    _mockToasts.value = [{ id: 3, message: 'Tip: swipe to dismiss', variant: 'info', duration: 3000 }]
     mountToast()
     await flushPromises()
     expect(document.body.textContent).toContain('Tip: swipe to dismiss')
@@ -80,8 +80,8 @@ describe('Toast component', () => {
 
   it('renders multiple toasts simultaneously', async () => {
     _mockToasts.value = [
-      { id: 1, message: 'First', variant: 'success' },
-      { id: 2, message: 'Second', variant: 'error' },
+      { id: 1, message: 'First', variant: 'success', duration: 3000 },
+      { id: 2, message: 'Second', variant: 'error', duration: 3000 },
     ]
     mountToast()
     await flushPromises()
@@ -90,7 +90,7 @@ describe('Toast component', () => {
   })
 
   it('dismiss button calls dismiss with the correct toast id', async () => {
-    _mockToasts.value = [{ id: 42, message: 'Dismissable', variant: 'success' }]
+    _mockToasts.value = [{ id: 42, message: 'Dismissable', variant: 'success', duration: 3000 }]
     mountToast()
     await flushPromises()
     const dismissBtn = document.body.querySelector('button[aria-label="Dismiss"]') as HTMLElement

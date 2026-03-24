@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ArrowLeft, Plus, Bell, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import type { SubscriptionEntry } from '@/types'
@@ -8,6 +8,7 @@ import { useCategoriesStore } from '@/stores/categories'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+import { invalidateDashboard } from '@/composables/useDashboardRefresh'
 import SubscriptionItem from '@/components/subscriptions/SubscriptionItem.vue'
 import RecurringSummaryCard from '@/components/subscriptions/RecurringSummaryCard.vue'
 import AddSubscriptionSheet from '@/components/subscriptions/AddSubscriptionSheet.vue'
@@ -27,6 +28,17 @@ const selectedSubscription = ref<SubscriptionEntry | null>(null)
 const showEditSheet = ref(false)
 const inactiveExpanded = ref(false)
 
+// ── Tab switcher (Expenses / Income) ─────────────────────────
+const activeTab = ref<'EXPENSE' | 'INCOME'>('EXPENSE')
+
+const activeByTab = computed(() =>
+  subscriptionsStore.activeSubscriptions.filter((s) => s.type === activeTab.value),
+)
+
+const inactiveByTab = computed(() =>
+  subscriptionsStore.inactiveSubscriptions.filter((s) => s.type === activeTab.value),
+)
+
 onMounted(async () => {
   await Promise.all([
     subscriptionsStore.loadSubscriptions(),
@@ -40,7 +52,8 @@ function openAdd() {
 }
 
 function onCreated() {
-  toastStore.show('Subscription added', 'success')
+  toastStore.show('Recurring item added', 'success')
+  invalidateDashboard()
 }
 
 function openEdit(subscription: SubscriptionEntry) {
@@ -49,12 +62,13 @@ function openEdit(subscription: SubscriptionEntry) {
 }
 
 function onSaved() {
-  toastStore.show('Subscription updated', 'success')
+  toastStore.show('Recurring item updated', 'success')
+  invalidateDashboard()
 }
 
 function onDeleted() {
-  toastStore.show('Subscription deleted', 'success')
   selectedSubscription.value = null
+  invalidateDashboard()
 }
 
 function closeEdit() {
@@ -64,9 +78,10 @@ function closeEdit() {
 </script>
 
 <template>
-  <div class="min-h-screen pb-24">
+  <div class="min-h-screen pb-24 md:pb-0">
+    <div class="mx-auto max-w-md md:max-w-4xl px-4">
     <!-- Back to Settings -->
-    <div class="flex items-center gap-1 px-4 pb-1 pt-4">
+    <div class="flex items-center gap-1 pb-1 pt-4">
       <button
         type="button"
         class="flex items-center gap-1 text-caption font-medium text-text-primary"
@@ -79,8 +94,8 @@ function closeEdit() {
     </div>
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 pb-4 pt-2">
-      <h1 class="text-page-title font-bold text-text-primary">Subscriptions</h1>
+    <div class="flex items-center justify-between pb-4 pt-2">
+      <h1 class="text-page-title font-bold text-text-primary" data-testid="page-title">Recurring</h1>
       <button
         type="button"
         class="flex h-9 items-center gap-1.5 rounded-xl px-4 text-caption font-medium text-white transition-colors duration-150 hover:opacity-90"
@@ -99,7 +114,7 @@ function closeEdit() {
     <!-- Loading skeleton -->
     <div
       v-if="subscriptionsStore.isLoading"
-      class="mx-4 overflow-hidden rounded-2xl bg-surface"
+      class="overflow-hidden rounded-2xl bg-surface"
       :style="{ boxShadow: 'var(--shadow-card)' }"
       data-testid="loading-skeleton"
     >
@@ -118,7 +133,7 @@ function closeEdit() {
     </div>
 
     <!-- Error state -->
-    <div v-else-if="subscriptionsStore.error" class="px-4 py-3">
+    <div v-else-if="subscriptionsStore.error" class="py-3">
       <p class="text-body text-danger" data-testid="error-message">{{ subscriptionsStore.error }}</p>
     </div>
 
@@ -127,8 +142,8 @@ function closeEdit() {
       v-else-if="subscriptionsStore.subscriptions.length === 0"
       :icon="Bell"
       title="No subscriptions yet."
-      description="Track subscriptions like Netflix, Spotify, or your gym. We'll show you upcoming bills."
-      action-label="Add Subscription"
+      description="Track recurring payments like Netflix, Spotify, or your gym. We'll show you upcoming bills."
+      action-label="Add Recurring"
       action-test-id="empty-add-btn"
       @action="openAdd"
     />
@@ -142,23 +157,48 @@ function closeEdit() {
         :currency="authStore.defaultCurrency"
       />
 
+      <!-- Expense / Income tab switcher -->
+      <div class="mb-4 flex rounded-lg bg-surface-muted p-1" data-testid="tab-switcher">
+        <button
+          type="button"
+          class="flex-1 rounded-md py-2 text-center text-caption font-medium transition-all duration-150"
+          :class="activeTab === 'EXPENSE'
+            ? 'bg-surface text-text-primary shadow-sm'
+            : 'text-text-secondary hover:text-text-primary'"
+          data-testid="tab-expense"
+          @click="activeTab = 'EXPENSE'; inactiveExpanded = false"
+        >
+          Expenses
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-md py-2 text-center text-caption font-medium transition-all duration-150"
+          :class="activeTab === 'INCOME'
+            ? 'bg-surface text-text-primary shadow-sm'
+            : 'text-text-secondary hover:text-text-primary'"
+          data-testid="tab-income"
+          @click="activeTab = 'INCOME'; inactiveExpanded = false"
+        >
+          Income
+        </button>
+      </div>
+
       <!-- Active section -->
-      <div v-if="subscriptionsStore.activeSubscriptions.length > 0">
-        <div class="mt-2 flex items-center gap-2 px-4 pb-2">
+      <div v-if="activeByTab.length > 0">
+        <div class="mt-2 flex items-center gap-2 pb-2">
           <h2 class="text-card-title font-semibold text-text-primary" data-testid="active-section-header">
             Active
           </h2>
-          <span class="text-caption text-text-muted">({{ subscriptionsStore.activeSubscriptions.length }})</span>
+          <span class="text-caption text-text-muted">({{ activeByTab.length }})</span>
         </div>
-        <div
-          class="mx-4 overflow-hidden rounded-xl bg-surface"
-          :style="{ boxShadow: 'var(--shadow-card)' }"
-          data-testid="active-list"
-        >
-          <div class="divide-y divide-border">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="active-list">
+          <div
+            v-for="sub in activeByTab"
+            :key="sub.id"
+            class="overflow-hidden rounded-xl bg-surface"
+            :style="{ boxShadow: 'var(--shadow-card)' }"
+          >
             <SubscriptionItem
-              v-for="sub in subscriptionsStore.activeSubscriptions"
-              :key="sub.id"
               :subscription="sub"
               :currency="authStore.defaultCurrency"
               @edit="openEdit"
@@ -167,12 +207,21 @@ function closeEdit() {
         </div>
       </div>
 
+      <!-- No items for this tab -->
+      <div
+        v-else-if="activeByTab.length === 0 && inactiveByTab.length === 0"
+        class="py-8 text-center text-body text-text-muted"
+        data-testid="tab-empty-state"
+      >
+        No {{ activeTab === 'EXPENSE' ? 'expense' : 'income' }} items yet.
+      </div>
+
       <!-- Inactive section (collapsible) -->
-      <div v-if="subscriptionsStore.inactiveSubscriptions.length > 0" class="mt-4">
+      <div v-if="inactiveByTab.length > 0" class="mt-4">
         <!-- Inactive section header (tappable) -->
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-4 pb-2"
+          class="flex w-full items-center gap-2 pb-2"
           data-testid="inactive-section-header"
           @click="inactiveExpanded = !inactiveExpanded"
         >
@@ -183,20 +232,22 @@ function closeEdit() {
             aria-hidden="true"
           />
           <h2 class="text-card-title font-semibold text-text-primary">Inactive</h2>
-          <span class="text-caption text-text-muted">({{ subscriptionsStore.inactiveSubscriptions.length }})</span>
+          <span class="text-caption text-text-muted">({{ inactiveByTab.length }})</span>
         </button>
 
         <!-- Inactive list (collapsed by default) -->
         <div
           v-if="inactiveExpanded"
-          class="mx-4 overflow-hidden rounded-xl bg-surface"
-          :style="{ boxShadow: 'var(--shadow-card)' }"
+          class="grid grid-cols-1 md:grid-cols-2 gap-4"
           data-testid="inactive-list"
         >
-          <div class="divide-y divide-border">
+          <div
+            v-for="sub in inactiveByTab"
+            :key="sub.id"
+            class="overflow-hidden rounded-xl bg-surface"
+            :style="{ boxShadow: 'var(--shadow-card)' }"
+          >
             <SubscriptionItem
-              v-for="sub in subscriptionsStore.inactiveSubscriptions"
-              :key="sub.id"
               :subscription="sub"
               :currency="authStore.defaultCurrency"
               @edit="openEdit"
@@ -205,6 +256,8 @@ function closeEdit() {
         </div>
       </div>
     </template>
+
+    </div>
 
     <!-- Add Subscription Sheet -->
     <AddSubscriptionSheet

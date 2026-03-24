@@ -74,7 +74,7 @@ function handleClick() {
   <button
     v-else
     type="button"
-    class="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-surface p-4 text-left transition-colors duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:bg-surface-muted"
+    class="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-surface p-4 text-left transition-all duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:bg-surface-muted active:scale-[0.98]"
     :style="{ boxShadow: 'var(--shadow-card)' }"
     :aria-label="`${account.name} - ${typeLabel} - ${formattedBalance}`"
     @click="handleClick"

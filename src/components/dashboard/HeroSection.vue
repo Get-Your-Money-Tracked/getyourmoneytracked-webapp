@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { X, Lightbulb } from 'lucide-vue-next'
 import { formatCurrency } from '@/utils/currency'
 import MonthlyProgressBar from '@/components/dashboard/MonthlyProgressBar.vue'
+import { useCountUp } from '@/composables/useCountUp'
 
 const CALLOUT_KEY = 'callout_dismissed'
 
@@ -38,10 +39,13 @@ const amountColorClass = computed(() => {
   return 'text-text-muted'
 })
 
+// Count-up animation for the hero amount
+const { displayValue: animatedRemaining } = useCountUp(() => props.remainingBudget)
+
 const formattedRemaining = computed(() => {
-  const abs = Math.abs(props.remainingBudget)
+  const abs = Math.abs(animatedRemaining.value)
   const formatted = formatCurrency(abs, props.currency)
-  return props.remainingBudget < 0 ? `-${formatted}` : formatted
+  return animatedRemaining.value < 0 ? `-${formatted}` : formatted
 })
 
 const formattedIncome = computed(() => formatCurrency(props.totalIncome, props.currency))
