@@ -30,13 +30,20 @@ setOnUnauthorized(async () => {
   router.push({ name: 'login', query: { reason: 'session-expired' } })
 })
 
+// Promise that resolves once Firebase's initial auth state is known.
+// This prevents the route guard from making decisions before we know
+// whether the user is logged in or not.
+let resolveAuthReady: () => void
+const authReady = new Promise<void>((resolve) => {
+  resolveAuthReady = resolve
+})
+
 // Route guard — protect authenticated routes
-router.beforeEach((to) => {
-  // While auth is still loading, let it pass — App.vue shows AppLoader
-  // The guard will re-run after auth resolves (see router.replace below)
-  if (authStore.isLoading) {
-    return true
-  }
+router.beforeEach(async (to) => {
+  // Block navigation until Firebase has resolved the initial auth state.
+  // Without this, the first navigation (/ → /dashboard) would slip through
+  // before we know if the user is authenticated, causing API errors.
+  await authReady
 
   const requiresAuth = to.meta.requiresAuth !== false
   const isOnboardingRoute = to.name === 'onboarding'
@@ -81,13 +88,8 @@ onAuthStateChanged(auth, async (user) => {
 
   if (!appMounted) {
     appMounted = true
-
-    // After auth resolves, re-run the route guard in case the initial navigation
-    // was allowed through while isLoading was still true.
-    router.replace(router.currentRoute.value.fullPath).catch(() => {
-      // ignore redundant navigation errors
-    })
-
+    // Unblock the route guard now that we know the auth state.
+    resolveAuthReady!()
     app.mount('#app')
   } else if (user && router.currentRoute.value.name === 'login') {
     // User just logged in (onAuthStateChanged fired after signInWithEmailAndPassword).
