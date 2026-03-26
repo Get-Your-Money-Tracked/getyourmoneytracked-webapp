@@ -73,27 +73,45 @@ router.beforeEach(async (to) => {
   // implicitly returns undefined — navigation proceeds
 })
 
-// Wait for Firebase to resolve auth state before mounting the app.
-// Keep the listener alive so subsequent login/logout also update the store.
+// Wait for Firebase to resolve auth state before allowing navigation.
+// The app is mounted eagerly so the AppLoader is visible while Firebase
+// and the backend API initialise (prevents blank screen on slow networks
+// or when the backend is cold-starting).
 let appMounted = false
 onAuthStateChanged(auth, async (user) => {
-  authStore.setUser(user)
+  // 1. Mount the app immediately on the very first callback so the
+  //    AppLoader (driven by authStore.isLoading) renders right away.
+  if (!appMounted) {
+    appMounted = true
+    app.mount('#app')
+  }
 
-  // Hydrate currency + display name from API for existing users.
-  // We must await this before navigating to the dashboard so that
-  // the backend user lookup succeeds and the token is cached.
+  // 2. Update the store with the Firebase user (or null).
+  //    NOTE: do NOT call setUser() before mount — it sets isLoading=false
+  //    which would hide the AppLoader before hydration is done.
+  //    For the initial load we need isLoading to stay true until hydration
+  //    finishes, so we defer setUser to after hydrateFromApi.
   if (user && !authStore.isNewUser) {
+    // Hydrate currency + display name from the backend before marking
+    // auth as ready. This ensures the route guard (which awaits authReady)
+    // won't let navigation proceed until we have a valid token + user data.
     await authStore.hydrateFromApi().catch(() => {
       // Silently fall back to localStorage if API is unreachable
     })
   }
 
-  if (!appMounted) {
-    appMounted = true
-    // Unblock the route guard now that we know the auth state.
-    resolveAuthReady!()
-    app.mount('#app')
-  } else if (user && router.currentRoute.value.name === 'login') {
+  // 3. Now set the user (clears isLoading) and unblock the route guard.
+  authStore.setUser(user)
+
+  if (resolveAuthReady) {
+    // Unblock the route guard now that auth state + hydration are complete.
+    resolveAuthReady()
+    // Clear so we only resolve once.
+    resolveAuthReady = undefined!
+  }
+
+  // 4. Handle post-login redirect for subsequent auth state changes (not the initial load).
+  if (user && router.currentRoute.value.name === 'login') {
     // User just logged in (onAuthStateChanged fired after signInWithEmailAndPassword).
     // New users (isNewUser flag set by signup()) go to /onboarding; others go to /dashboard.
     const onboardingCompleted = (() => {
