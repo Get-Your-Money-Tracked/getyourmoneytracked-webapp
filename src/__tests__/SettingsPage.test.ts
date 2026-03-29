@@ -25,6 +25,7 @@ const _mockInitials = ref('AJ')
 const _mockCurrency = ref('USD')
 const _mockLogout = vi.fn()
 const _mockUpdateProfile = vi.fn()
+const _mockDeleteAccount = vi.fn()
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () =>
@@ -35,6 +36,7 @@ vi.mock('@/stores/auth', () => ({
       get defaultCurrency() { return _mockCurrency.value },
       logout: _mockLogout,
       updateProfile: _mockUpdateProfile,
+      deleteAccount: _mockDeleteAccount,
     }),
 }))
 
@@ -65,6 +67,7 @@ const router = createRouter({
     { path: '/accounts', component: { template: '<div>Accounts</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
     { path: '/tags', component: { template: '<div>Tags</div>' } },
+    { path: '/privacy', component: { template: '<div>Privacy</div>' } },
   ],
 })
 
@@ -330,5 +333,105 @@ describe('SettingsPage', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="logout-cancel-btn"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="logout-confirm-btn"]').exists()).toBe(true)
+  })
+
+  // ── Delete account flow ─────────────────────────────────────
+  it('renders Danger Zone section with Delete Account button', () => {
+    const wrapper = mountPage()
+    expect(wrapper.text()).toContain('Danger Zone')
+    expect(wrapper.find('[data-testid="delete-account-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="delete-account-btn"]').text()).toContain('Delete Account')
+  })
+
+  it('does NOT show delete dialog initially', () => {
+    const wrapper = mountPage()
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(false)
+  })
+
+  it('shows delete confirmation dialog when Delete Account is clicked', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').text()).toContain('Delete Account')
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').text()).toContain('cannot be undone')
+  })
+
+  it('delete confirm button is disabled until "DELETE" is typed', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    const confirmBtn = wrapper.find('[data-testid="delete-confirm-btn"]')
+    expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true)
+
+    // Type partial text — still disabled
+    await wrapper.find('[data-testid="delete-confirm-input"]').setValue('DEL')
+    expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('delete confirm button becomes enabled when "DELETE" is typed', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="delete-confirm-input"]').setValue('DELETE')
+    const confirmBtn = wrapper.find('[data-testid="delete-confirm-btn"]')
+    expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('calls authStore.deleteAccount() when delete is confirmed', async () => {
+    _mockDeleteAccount.mockResolvedValue(undefined)
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="delete-confirm-input"]').setValue('DELETE')
+    await wrapper.find('[data-testid="delete-confirm-btn"]').trigger('click')
+    await flushPromises()
+    expect(_mockDeleteAccount).toHaveBeenCalledOnce()
+  })
+
+  it('hides delete dialog when Cancel is clicked', async () => {
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="delete-cancel-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(false)
+    expect(_mockDeleteAccount).not.toHaveBeenCalled()
+  })
+
+  it('clears confirm input when delete dialog is reopened', async () => {
+    const wrapper = mountPage()
+    // Open, type, cancel
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="delete-confirm-input"]').setValue('DELETE')
+    await wrapper.find('[data-testid="delete-cancel-btn"]').trigger('click')
+    await flushPromises()
+    // Reopen
+    await wrapper.find('[data-testid="delete-account-btn"]').trigger('click')
+    await flushPromises()
+    const input = wrapper.find('[data-testid="delete-confirm-input"]')
+    expect((input.element as HTMLInputElement).value).toBe('')
+  })
+
+  // ── Privacy policy link ─────────────────────────────────────
+  it('renders Privacy Policy link in footer', () => {
+    const wrapper = mountPage()
+    const link = wrapper.find('[data-testid="privacy-policy-link"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toContain('Privacy Policy')
+  })
+
+  it('navigates to /privacy when Privacy Policy link is clicked', async () => {
+    await router.push('/settings')
+    await router.isReady()
+    const wrapper = mount(SettingsPage, {
+      global: { plugins: [createPinia(), router] },
+      attachTo: document.body,
+    })
+    await wrapper.find('[data-testid="privacy-policy-link"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/privacy')
   })
 })

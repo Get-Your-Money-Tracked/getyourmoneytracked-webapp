@@ -91,6 +91,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/pages/PrivacyPolicyPage.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard',
   },

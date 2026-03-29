@@ -33,6 +33,12 @@ const ME_QUERY = `
   }
 `
 
+const DELETE_ACCOUNT_MUTATION = `
+  mutation DeleteAccount {
+    deleteAccount
+  }
+`
+
 export interface MeResult {
   id: string
   email: string
@@ -84,4 +90,14 @@ export async function callMe(): Promise<MeResult | null> {
     throw new Error(result.error.message ?? 'Failed to fetch user profile.')
   }
   return result.data?.me ?? null
+}
+
+export async function callDeleteAccount(): Promise<void> {
+  const result = await urqlClient
+    .mutation(DELETE_ACCOUNT_MUTATION, {})
+    .toPromise()
+
+  if (result.error) {
+    throw new Error(result.error.message ?? 'Failed to delete account.')
+  }
 }

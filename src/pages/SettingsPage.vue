@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   FolderOpen,
@@ -11,6 +11,8 @@ import {
   Wallet,
   Pencil,
   Tag,
+  Trash2,
+  Shield,
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -67,6 +69,37 @@ async function confirmLogout() {
     isLoggingOut.value = false
   }
 }
+
+// ── Delete account confirmation ───────────────────────────────
+const showDeleteDialog = ref(false)
+const isDeletingAccount = ref(false)
+const deleteConfirmText = ref('')
+
+function requestDeleteAccount() {
+  deleteConfirmText.value = ''
+  showDeleteDialog.value = true
+}
+
+function cancelDeleteAccount() {
+  showDeleteDialog.value = false
+  deleteConfirmText.value = ''
+}
+
+const canConfirmDelete = computed(() => deleteConfirmText.value === 'DELETE')
+
+async function confirmDeleteAccount() {
+  if (!canConfirmDelete.value) return
+  isDeletingAccount.value = true
+  try {
+    await authStore.deleteAccount()
+    showDeleteDialog.value = false
+    router.replace('/login')
+  } catch {
+    toastStore.show('Failed to delete account. Please try again.', 'error')
+  } finally {
+    isDeletingAccount.value = false
+  }
+}
 </script>
 
 <template>
@@ -107,6 +140,67 @@ async function confirmLogout() {
             @click="confirmLogout"
           >
             {{ isLoggingOut ? 'Logging out...' : 'Log Out' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- Delete account confirmation dialog -->
+  <Transition name="backdrop">
+    <div
+      v-if="showDeleteDialog"
+      class="fixed inset-0 z-60 flex items-center justify-center bg-black/50 px-6"
+      data-testid="delete-dialog-backdrop"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl bg-surface p-6"
+        :style="{ boxShadow: 'var(--shadow-sheet)' }"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Delete account?"
+        data-testid="delete-confirm-dialog"
+      >
+        <h3 class="text-section-title mb-2 font-semibold" :style="{ color: 'var(--color-danger)' }">Delete Account</h3>
+        <p class="text-body mb-2 text-text-secondary">
+          This will permanently delete your account and all your data including transactions, budgets, goals, and categories.
+        </p>
+        <p class="text-body mb-4 font-medium text-text-primary">
+          This action cannot be undone.
+        </p>
+        <div class="mb-4">
+          <label class="text-caption mb-1.5 block text-text-secondary" for="delete-confirm-input">
+            Type <span class="font-semibold text-text-primary">DELETE</span> to confirm
+          </label>
+          <input
+            id="delete-confirm-input"
+            v-model="deleteConfirmText"
+            type="text"
+            autocomplete="off"
+            class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-sm text-text-primary outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+            :class="{ 'border-danger focus:border-danger focus:ring-danger/20': deleteConfirmText.length > 0 && !canConfirmDelete }"
+            placeholder="DELETE"
+            data-testid="delete-confirm-input"
+          />
+        </div>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            class="text-body h-11 flex-1 rounded-xl border border-border font-medium text-text-secondary transition-colors hover:bg-surface-muted"
+            data-testid="delete-cancel-btn"
+            @click="cancelDeleteAccount"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="text-body h-11 flex-1 rounded-xl font-medium text-white transition-opacity disabled:opacity-50"
+            :style="{ backgroundColor: 'var(--color-danger)' }"
+            :disabled="!canConfirmDelete || isDeletingAccount"
+            data-testid="delete-confirm-btn"
+            @click="confirmDeleteAccount"
+          >
+            {{ isDeletingAccount ? 'Deleting...' : 'Delete Account' }}
           </button>
         </div>
       </div>
@@ -278,19 +372,57 @@ async function confirmLogout() {
         </button>
       </div>
 
+      <!-- Danger Zone -->
+      <div class="mt-6">
+        <p class="text-caption mb-2 px-1 font-medium text-text-muted">Danger Zone</p>
+        <div
+          class="overflow-hidden rounded-xl bg-surface"
+          :style="{ boxShadow: 'var(--shadow-card)' }"
+        >
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-surface-muted"
+            data-testid="delete-account-btn"
+            @click="requestDeleteAccount"
+          >
+            <Trash2 :size="20" class="flex-shrink-0" :style="{ color: 'var(--color-danger)' }" />
+            <div class="flex-1">
+              <span class="text-body font-medium" :style="{ color: 'var(--color-danger)' }">
+                Delete Account
+              </span>
+              <p class="text-caption text-text-muted">
+                Permanently delete all your data
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- App Info Footer -->
       <div class="mt-8 pb-4 text-center" data-testid="app-footer">
         <p class="text-caption font-medium text-text-muted">GetYourMoneyTracked</p>
         <p class="mt-0.5 text-badge text-text-muted">Version 1.0.0</p>
-        <a
-          href="https://github.com/anomalyco/opencode/issues"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="mt-1 inline-block text-badge font-medium text-primary underline-offset-2 hover:underline"
-          data-testid="report-bug-link"
-        >
-          Report a bug
-        </a>
+        <div class="mt-1 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 text-badge font-medium text-primary underline-offset-2 hover:underline"
+            data-testid="privacy-policy-link"
+            @click="router.push('/privacy')"
+          >
+            <Shield :size="12" />
+            Privacy Policy
+          </button>
+          <span class="text-badge text-text-muted">·</span>
+          <a
+            href="https://github.com/anomalyco/opencode/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-block text-badge font-medium text-primary underline-offset-2 hover:underline"
+            data-testid="report-bug-link"
+          >
+            Report a bug
+          </a>
+        </div>
       </div>
     </div>
   </div>

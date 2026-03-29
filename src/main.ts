@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { install as urqlPlugin } from '@urql/vue'
 import router from '@/router'
-import { urqlClient, setOnUnauthorized } from '@/lib/urql'
+import { urqlClient, setOnUnauthorized, markAuthReady } from '@/lib/urql'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
 import { auth } from '@/lib/firebase'
@@ -106,6 +106,10 @@ onAuthStateChanged(auth, async (user) => {
   if (resolveAuthReady) {
     // Unblock the route guard now that auth state + hydration are complete.
     resolveAuthReady()
+    // Enable 401 auto-logout now that the initial auth window has closed.
+    // Before this point, transient 401s (e.g. from hydrateFromApi racing a
+    // slow token refresh) are suppressed to avoid force-logging out the user.
+    markAuthReady()
     // Clear so we only resolve once.
     resolveAuthReady = undefined!
   }

@@ -218,6 +218,62 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Permanently delete the user's account and all associated data.
+   * Calls the backend deleteAccount mutation, then signs out of Firebase
+   * and clears all local state.
+   */
+  async function deleteAccount(): Promise<void> {
+    const { callDeleteAccount } = await import('@/graphql/mutations/auth')
+    await callDeleteAccount()
+
+    // The backend has already deleted the Firebase user, so sign out locally.
+    const { getAuth, signOut } = await import('firebase/auth')
+    try {
+      await signOut(getAuth())
+    } catch {
+      // The Firebase user may already be deleted, causing signOut to fail — that's fine.
+    }
+
+    // Clear all local state (same as logout)
+    user.value = null
+    error.value = null
+    isNewUser.value = false
+    defaultCurrency.value = 'USD'
+    saveCurrencyToStorage('USD')
+    displayNameOverride.value = null
+    try {
+      localStorage.removeItem(DISPLAY_NAME_KEY)
+    } catch {
+      // ignore
+    }
+    try {
+      for (const key of ONBOARDING_KEYS) {
+        localStorage.removeItem(key)
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      const { useAccountsStore } = await import('@/stores/accounts')
+      const { useCategoriesStore } = await import('@/stores/categories')
+      const { useTransactionsStore } = await import('@/stores/transactions')
+      const accountsStore = useAccountsStore()
+      const categoriesStore = useCategoriesStore()
+      const transactionsStore = useTransactionsStore()
+      accountsStore.accounts = []
+      accountsStore.error = null
+      categoriesStore.categories = []
+      categoriesStore.error = null
+      transactionsStore.transactions = []
+      transactionsStore.error = null
+      transactionsStore.lastUsedAccountId = null
+      transactionsStore.lastUsedCategoryId = null
+    } catch {
+      // Stores may not be initialized yet — safe to ignore
+    }
+  }
+
   async function logout(): Promise<void> {
     const { getAuth, signOut } = await import('firebase/auth')
     await signOut(getAuth())
@@ -283,6 +339,7 @@ export const useAuthStore = defineStore('auth', () => {
     sendPasswordReset,
     updateProfile,
     hydrateFromApi,
+    deleteAccount,
     logout,
   }
 })

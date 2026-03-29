@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2, DollarSign } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
 // ── Mode: 'login' | 'signup' | 'forgot' ──────────────────────────────────────
 type Mode = 'login' | 'signup' | 'forgot'
 const mode = ref<Mode>('login')
+
+const router = useRouter()
 
 const authStore = useAuthStore()
 const { login, signup, sendPasswordReset, clearError } = authStore
@@ -470,6 +473,18 @@ const CURRENCIES = [
           </div>
         </template>
       </div>
+
+      <!-- Privacy Policy link -->
+      <p class="mt-4 text-center">
+        <button
+          type="button"
+          class="text-badge text-[var(--color-text-muted)] underline-offset-2 hover:text-[var(--color-text-secondary)] hover:underline"
+          data-testid="privacy-policy-link"
+          @click="router.push('/privacy')"
+        >
+          Privacy Policy
+        </button>
+      </p>
     </div>
   </div>
 </template>
