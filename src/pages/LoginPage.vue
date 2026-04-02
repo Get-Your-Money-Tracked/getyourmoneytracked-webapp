@@ -174,7 +174,7 @@ const CURRENCIES = [
             <p class="text-caption text-danger">{{ error }}</p>
           </div>
 
-          <form class="space-y-4" @submit.prevent="handleLogin" novalidate>
+          <form class="space-y-4" novalidate @submit.prevent="handleLogin">
             <!-- Email -->
             <div>
               <input
@@ -206,8 +206,8 @@ const CURRENCIES = [
                 <button
                   type="button"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-                  @click="showPassword = !showPassword"
                   aria-label="Toggle password visibility"
+                  @click="showPassword = !showPassword"
                 >
                   <EyeOff v-if="showPassword" :size="18" />
                   <Eye v-else :size="18" />
@@ -272,7 +272,7 @@ const CURRENCIES = [
             <p class="text-caption text-danger">{{ error }}</p>
           </div>
 
-          <form class="space-y-4" @submit.prevent="handleSignup" novalidate>
+          <form class="space-y-4" novalidate @submit.prevent="handleSignup">
             <!-- Display Name -->
             <div>
               <input
@@ -319,8 +319,8 @@ const CURRENCIES = [
                 <button
                   type="button"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-                  @click="showPassword = !showPassword"
                   aria-label="Toggle password visibility"
+                  @click="showPassword = !showPassword"
                 >
                   <EyeOff v-if="showPassword" :size="18" />
                   <Eye v-else :size="18" />
@@ -354,8 +354,8 @@ const CURRENCIES = [
                 <button
                   type="button"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-                  @click="showConfirmPassword = !showConfirmPassword"
                   aria-label="Toggle confirm password visibility"
+                  @click="showConfirmPassword = !showConfirmPassword"
                 >
                   <EyeOff v-if="showConfirmPassword" :size="18" />
                   <Eye v-else :size="18" />
@@ -438,7 +438,7 @@ const CURRENCIES = [
             <p class="text-caption text-danger">{{ error }}</p>
           </div>
 
-          <form class="space-y-4" @submit.prevent="handleForgotPassword" novalidate>
+          <form class="space-y-4" novalidate @submit.prevent="handleForgotPassword">
             <div>
               <input
                 v-model="email"

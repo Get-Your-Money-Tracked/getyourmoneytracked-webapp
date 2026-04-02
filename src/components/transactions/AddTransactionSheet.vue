@@ -85,6 +85,8 @@ const saveButtonColor = computed(() => {
       return 'var(--color-primary)'
     case 'TRANSFER':
       return 'var(--color-info)'
+    default:
+      return 'var(--color-primary)'
   }
 })
 

@@ -61,7 +61,8 @@ const groups = computed(() => groupTransactionsByDate(props.transactions))
         </div>
 
         <!-- Transactions in group -->
-        <div class="divide-y divide-border/30 rounded-xl bg-surface-elevated mx-4 mb-3"
+        <div
+class="divide-y divide-border/30 rounded-xl bg-surface-elevated mx-4 mb-3"
           :style="{ boxShadow: 'var(--shadow-card)' }"
         >
           <TransactionListItem
