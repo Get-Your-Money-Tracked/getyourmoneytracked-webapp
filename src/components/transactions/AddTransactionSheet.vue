@@ -287,6 +287,15 @@ const saveLabel = computed(() => {
         <DateSelector v-model="selectedDate" />
       </div>
 
+      <!-- Description -->
+      <input
+        v-model="description"
+        type="text"
+        placeholder="Description"
+        maxlength="255"
+        class="mb-2 h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
+
       <!-- More details toggle -->
       <button
         type="button"
@@ -300,14 +309,6 @@ const saveLabel = computed(() => {
       <!-- More details section -->
       <Transition name="expand">
         <div v-if="showMoreDetails" class="mb-3 space-y-2">
-          <!-- Description -->
-          <input
-            v-model="description"
-            type="text"
-            placeholder="Description"
-            maxlength="255"
-            class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
           <!-- Notes -->
           <textarea
             v-model="notes"

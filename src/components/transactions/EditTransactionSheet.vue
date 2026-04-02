@@ -137,7 +137,7 @@ function prefillFromTransaction(tx: Transaction) {
   notes.value = tx.notes ?? ''
   tagsInput.value = tagsToString(tx.tags)
   // Auto-expand if any optional field has data
-  showMoreDetails.value = !!(tx.description || tx.notes || tx.tags.length > 0)
+  showMoreDetails.value = !!(tx.notes || tx.tags.length > 0)
   submitError.value = null
   tagsError.value = null
   showDeleteDialog.value = false
@@ -402,6 +402,15 @@ const deleteDescriptionText = computed(() => {
         <DateSelector v-model="selectedDate" />
       </div>
 
+      <!-- Description -->
+      <input
+        v-model="description"
+        type="text"
+        placeholder="Description"
+        maxlength="255"
+        class="mb-2 h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
+
       <!-- More details toggle -->
       <button
         type="button"
@@ -415,13 +424,6 @@ const deleteDescriptionText = computed(() => {
       <!-- More details section -->
       <Transition name="expand">
         <div v-if="showMoreDetails" class="mb-3 space-y-2">
-          <input
-            v-model="description"
-            type="text"
-            placeholder="Description"
-            maxlength="255"
-            class="h-10 w-full rounded-xl border border-border bg-surface-muted px-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
           <textarea
             v-model="notes"
             placeholder="Notes"

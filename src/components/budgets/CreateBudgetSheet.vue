@@ -24,6 +24,7 @@ const currencySymbol = computed(() => getCurrencySymbol(props.currency))
 
 // ── Form state ────────────────────────────────────────────────
 const selectedCategoryId = ref<string>('')
+const budgetName = ref<string>('')
 const amountInput = ref<string>('')
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
@@ -65,6 +66,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       selectedCategoryId.value = ''
+      budgetName.value = ''
       amountInput.value = ''
       isSubmitting.value = false
       submitError.value = null
@@ -84,6 +86,7 @@ async function handleSubmit() {
     await budgetsStore.createBudget({
       categoryId: selectedCategoryId.value,
       amount: parsedAmount.value,
+      name: budgetName.value || undefined,
     })
     emit('created')
     emit('close')
@@ -98,6 +101,25 @@ async function handleSubmit() {
 <template>
   <ResponsiveSheet :open="open" title="Create Budget" test-id="create-budget-sheet" @close="$emit('close')">
     <div class="px-5 pb-8 pt-4">
+      <!-- Budget name (optional) -->
+      <div class="mb-4">
+        <label
+          for="create-budget-name"
+          class="text-caption mb-1 block font-medium text-text-secondary"
+        >
+          Name
+        </label>
+        <input
+          id="create-budget-name"
+          v-model="budgetName"
+          type="text"
+          placeholder="Budget name (optional — defaults to category)"
+          maxlength="100"
+          class="h-12 w-full rounded-xl border border-border bg-surface px-4 text-body text-text-primary placeholder:text-text-muted outline-none transition-colors focus:ring-2 focus:ring-primary focus:border-primary"
+          data-testid="budget-name-input"
+        />
+      </div>
+
       <!-- Category picker -->
       <div class="mb-4">
         <label

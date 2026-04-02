@@ -78,6 +78,7 @@ function makeDetail(overrides: Partial<MonthDetail> = {}): MonthDetail {
     categoryBreakdown: [],
     transactions: [],
     budgets: [],
+    subscriptions: [],
     ...overrides,
   }
 }

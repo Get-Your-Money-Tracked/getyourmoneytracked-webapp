@@ -28,6 +28,7 @@ const percentColorClass = computed(() => {
 
 const formattedSpent = computed(() => formatCurrency(props.budget.spent, props.currency))
 const formattedAmount = computed(() => formatCurrency(props.budget.amount, props.currency))
+const displayName = computed(() => props.budget.name || props.budget.category.name)
 
 function handleClick() {
   emit('edit', props.budget)
@@ -45,7 +46,7 @@ function handleClick() {
     <div class="flex items-center gap-2">
       <span class="text-base" aria-hidden="true">{{ budget.category.icon ?? '💰' }}</span>
       <span class="text-card-title flex-1 font-semibold text-text-primary" data-testid="budget-category-name">
-        {{ budget.category.name }}
+        {{ displayName }}
       </span>
       <span
         v-if="isExceeded"

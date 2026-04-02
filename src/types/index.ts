@@ -53,6 +53,7 @@ export interface Transaction {
 
 export interface Budget {
   id: string
+  name: string
   category: Category
   amount: number
   month: string
@@ -127,6 +128,7 @@ export interface MonthDetail {
   categoryBreakdown: CategorySpending[]
   transactions: Transaction[]
   budgets: BudgetProgress[]
+  subscriptions: SubscriptionEntry[]
 }
 
 export interface Dashboard {

@@ -29,6 +29,7 @@ function parseMonthDetailMoney(raw: Record<string, unknown>): MonthDetail {
   const categoryBreakdown = (raw.categoryBreakdown as Record<string, unknown>[]) ?? []
   const transactions = (raw.transactions as Record<string, unknown>[]) ?? []
   const budgets = (raw.budgets as Record<string, unknown>[]) ?? []
+  const subscriptions = (raw.subscriptions as Record<string, unknown>[]) ?? []
 
   return {
     ...raw,
@@ -47,6 +48,10 @@ function parseMonthDetailMoney(raw: Record<string, unknown>): MonthDetail {
       limit: parseMoney(bp.limit),
       spent: parseMoney(bp.spent),
       remaining: parseMoney(bp.remaining),
+    })),
+    subscriptions: subscriptions.map((s) => ({
+      ...s,
+      amount: parseMoney(s.amount),
     })),
   } as MonthDetail
 }
@@ -104,6 +109,29 @@ const MONTH_DETAIL_QUERY = `
         remaining
         percentUsed
         status
+      }
+      subscriptions {
+        id
+        name
+        type
+        amount
+        frequency
+        dayOfMonth
+        nextDueDate
+        isActive
+        autoLog
+        category {
+          id
+          name
+          icon
+          color
+        }
+        account {
+          id
+          name
+          type
+          currency
+        }
       }
     }
   }

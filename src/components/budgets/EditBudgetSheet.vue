@@ -25,6 +25,7 @@ const toastStore = useToastStore()
 
 // ── Form state ────────────────────────────────────────────────
 const amountInput = ref<string>('')
+const nameInput = ref<string>('')
 const isUpdating = ref(false)
 const isDeleting = ref(false)
 const updateError = ref<string | null>(null)
@@ -41,7 +42,11 @@ const isAmountChanged = computed(() =>
   props.budget !== null && parsedAmount.value !== props.budget.amount,
 )
 
-const isFormValid = computed(() => parsedAmount.value > 0 && isAmountChanged.value)
+const isNameChanged = computed(() =>
+  props.budget !== null && nameInput.value !== props.budget.name,
+)
+
+const isFormValid = computed(() => parsedAmount.value > 0 && (isAmountChanged.value || isNameChanged.value))
 
 const isOverBudgetWarning = computed(() =>
   props.budget !== null && parsedAmount.value > 0 && parsedAmount.value < props.budget.spent,
@@ -75,6 +80,7 @@ watch(
   (isOpen) => {
     if (isOpen && props.budget) {
       amountInput.value = props.budget.amount.toFixed(2)
+      nameInput.value = props.budget.name
       isUpdating.value = false
       isDeleting.value = false
       updateError.value = null
@@ -101,7 +107,10 @@ async function handleUpdate() {
   isUpdating.value = true
   updateError.value = null
   try {
-    await budgetsStore.updateBudget(props.budget.id, { amount: parsedAmount.value })
+    await budgetsStore.updateBudget(props.budget.id, {
+      amount: parsedAmount.value,
+      name: isNameChanged.value ? nameInput.value : undefined,
+    })
     emit('saved')
     emit('close')
   } catch (e: unknown) {
@@ -141,6 +150,7 @@ async function confirmDelete() {
             categoryId: snapshot.category.id,
             amount: snapshot.amount,
             month: snapshot.month,
+            name: snapshot.name || undefined,
           }).catch(() => {/* undo failed silently */})
         },
       },
@@ -171,7 +181,7 @@ async function confirmDelete() {
       >
         <h3 class="text-section-title mb-2 font-semibold text-text-primary">Delete this budget?</h3>
         <p class="text-body mb-6 text-text-secondary">
-          Remove the {{ formattedAmount }} budget for {{ budget?.category.name }}?
+          Remove the {{ formattedAmount }} budget for {{ budget?.name || budget?.category.name }}?
           Your transactions won't be affected.
         </p>
         <div class="flex gap-3">
@@ -200,6 +210,25 @@ async function confirmDelete() {
 
   <ResponsiveSheet :open="open" title="Edit Budget" test-id="edit-budget-sheet" @close="$emit('close')">
     <div class="px-5 pb-8 pt-4">
+      <!-- Budget name -->
+      <div class="mb-4">
+        <label
+          for="edit-budget-name"
+          class="text-caption mb-1 block font-medium text-text-secondary"
+        >
+          Name
+        </label>
+        <input
+          id="edit-budget-name"
+          v-model="nameInput"
+          type="text"
+          placeholder="Budget name (optional — defaults to category)"
+          maxlength="100"
+          class="h-12 w-full rounded-xl border border-border bg-surface px-4 text-body text-text-primary placeholder:text-text-muted outline-none transition-colors focus:ring-2 focus:ring-primary focus:border-primary"
+          data-testid="edit-budget-name-input"
+        />
+      </div>
+
       <!-- Category (read-only) -->
       <div class="mb-4">
         <label class="text-caption mb-1 block font-medium text-text-secondary">Category</label>

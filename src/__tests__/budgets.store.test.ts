@@ -31,6 +31,7 @@ vi.mock('@/graphql/queries/budgets', () => ({
 function makeBudget(overrides: Partial<Budget> = {}): Budget {
   return {
     id: 'budget-1',
+    name: '',
     month: '2026-03-01',
     amount: 200,
     spent: 80,

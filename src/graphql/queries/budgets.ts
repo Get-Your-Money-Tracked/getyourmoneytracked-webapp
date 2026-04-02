@@ -20,6 +20,7 @@ const BUDGETS_QUERY = `
   query Budgets($month: Date) {
     budgets(month: $month) {
       id
+      name
       month
       amount
       spent
@@ -44,6 +45,7 @@ const CREATE_BUDGET_MUTATION = `
   mutation CreateBudget($input: CreateBudgetInput!) {
     createBudget(input: $input) {
       id
+      name
       month
       amount
       spent
@@ -66,6 +68,7 @@ const UPDATE_BUDGET_MUTATION = `
   mutation UpdateBudget($id: ID!, $input: UpdateBudgetInput!) {
     updateBudget(id: $id, input: $input) {
       id
+      name
       month
       amount
       spent
@@ -96,10 +99,12 @@ export interface CreateBudgetInput {
   categoryId: string
   amount: number
   month?: string | null
+  name?: string | null
 }
 
 export interface UpdateBudgetInput {
   amount: number
+  name?: string | null
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────
@@ -128,7 +133,8 @@ export async function callCreateBudget(input: CreateBudgetInput): Promise<Budget
 }
 
 export async function callUpdateBudget(id: string, input: UpdateBudgetInput): Promise<Budget> {
-  const gqlInput = { amount: toMoney(input.amount) }
+  const gqlInput: Record<string, unknown> = { amount: toMoney(input.amount) }
+  if (input.name !== undefined) gqlInput.name = input.name
   const result = await urqlClient.mutation(UPDATE_BUDGET_MUTATION, { id, input: gqlInput }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to update budget.')
   if (!result.data?.updateBudget) throw new Error('No data returned from updateBudget.')

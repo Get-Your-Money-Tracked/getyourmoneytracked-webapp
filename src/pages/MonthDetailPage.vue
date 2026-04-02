@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Search } from 'lucide-vue-next'
-import type { MonthDetail, Transaction } from '@/types'
+import type { MonthDetail, Transaction, SubscriptionEntry } from '@/types'
 import type { TransactionFilter } from '@/graphql/queries/transactions'
 import { fetchMonthDetail } from '@/graphql/queries/history'
 import { useAuthStore } from '@/stores/auth'
@@ -13,8 +13,15 @@ import PercentBadge from '@/components/common/PercentBadge.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import CategoryPieChart from '@/components/charts/CategoryPieChart.vue'
 import MonthBudgetPerformance from '@/components/history/MonthBudgetPerformance.vue'
-import TransactionList from '@/components/transactions/TransactionList.vue'
+import TransactionListItem from '@/components/transactions/TransactionListItem.vue'
 import TransactionFilters from '@/components/transactions/TransactionFilters.vue'
+import { groupTransactionsByDate } from '@/utils/dateGrouping'
+
+// Extended transaction type with recurring metadata
+interface DisplayTransaction extends Transaction {
+  _isRecurring: boolean
+  _subscription?: SubscriptionEntry
+}
 
 // ── Route & stores ────────────────────────────────────────────────────────────
 
@@ -82,35 +89,73 @@ function onFilterChange(newFilter: TransactionFilter) {
   }
 }
 
-// ── Filtered transactions ─────────────────────────────────────────────────────
+// ── Merge transactions + subscriptions ─────────────────────────────────────────
 
-const filteredTransactions = computed<Transaction[]>(() => {
+/** Map a subscription to a pseudo-transaction for unified display */
+function subscriptionToTransaction(sub: SubscriptionEntry, fallbackMonth: string): DisplayTransaction {
+  return {
+    id: `sub-${sub.id}`,
+    type: sub.type,
+    amount: sub.amount,
+    date: sub.nextDueDate || `${fallbackMonth}-01`,
+    accountId: sub.account?.id ?? '',
+    toAccountId: null,
+    categoryId: sub.category?.id ?? null,
+    description: sub.name,
+    notes: null,
+    tags: [],
+    receiptUrl: null,
+    createdAt: '',
+    updatedAt: '',
+    _isRecurring: true,
+    _subscription: sub,
+  }
+}
+
+const filteredTransactions = computed<DisplayTransaction[]>(() => {
   if (!detail.value) return []
-  let txs = detail.value.transactions
+
+  // Regular transactions as DisplayTransaction
+  const regularTxs: DisplayTransaction[] = detail.value.transactions.map((t) => ({
+    ...t,
+    _isRecurring: false,
+  }))
+
+  // Subscriptions mapped to pseudo-transactions
+  const subTxs: DisplayTransaction[] = (detail.value.subscriptions ?? [])
+    .filter((s) => s.isActive)
+    .map((s) => subscriptionToTransaction(s, detail.value!.month))
+
+  let combined = [...regularTxs, ...subTxs]
 
   // type filter
   if (txFilter.value.type) {
-    txs = txs.filter((t) => t.type === txFilter.value.type)
+    combined = combined.filter((t) => t.type === txFilter.value.type)
   }
   // category filter
   if (txFilter.value.categoryId) {
-    txs = txs.filter((t) => t.categoryId === txFilter.value.categoryId)
+    combined = combined.filter((t) => t.categoryId === txFilter.value.categoryId)
   }
   // account filter
   if (txFilter.value.accountId) {
-    txs = txs.filter((t) => t.accountId === txFilter.value.accountId)
+    combined = combined.filter((t) => t.accountId === txFilter.value.accountId)
   }
   // search filter
   if (txFilter.value.search) {
     const q = txFilter.value.search.toLowerCase()
-    txs = txs.filter(
+    combined = combined.filter(
       (t) =>
         t.description?.toLowerCase().includes(q) ||
         t.notes?.toLowerCase().includes(q),
     )
   }
-  return txs
+
+  // Sort by date DESC
+  combined.sort((a, b) => b.date.localeCompare(a.date))
+  return combined
 })
+
+const groupedTransactions = computed(() => groupTransactionsByDate(filteredTransactions.value))
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -276,13 +321,46 @@ onMounted(async () => {
           :categories="categoriesStore.categories"
           @update:model-value="onFilterChange"
         />
-        <TransactionList
-          :transactions="filteredTransactions"
-          :is-loading="false"
-          :has-more="false"
-          :accounts="accountsStore.accounts"
-          :categories="categoriesStore.categories"
-        />
+
+        <!-- Empty state -->
+        <div
+          v-if="filteredTransactions.length === 0"
+          class="flex flex-col items-center justify-center py-16 text-center"
+        >
+          <p class="text-body text-text-muted">No transactions found.</p>
+          <p class="text-caption mt-1 text-text-muted">Try adjusting your filters.</p>
+        </div>
+
+        <!-- Grouped list -->
+        <template v-else>
+          <div v-for="group in groupedTransactions" :key="group.date">
+            <div class="px-4 py-2">
+              <p class="text-caption font-semibold uppercase text-text-muted">
+                {{ group.label }}
+              </p>
+            </div>
+
+            <div
+              class="divide-y divide-border/30 rounded-xl bg-surface-elevated mx-4 mb-3"
+              :style="{ boxShadow: 'var(--shadow-card)' }"
+            >
+              <div v-for="tx in group.transactions" :key="tx.id" class="relative">
+                <TransactionListItem
+                  :transaction="tx"
+                  :accounts="accountsStore.accounts"
+                  :categories="categoriesStore.categories"
+                />
+                <!-- Recurring badge -->
+                <span
+                  v-if="(tx as DisplayTransaction)._isRecurring"
+                  class="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-info/10 px-2 py-0.5 text-badge font-medium text-info"
+                >
+                  🔄 Recurring
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </template>
   </div>

@@ -42,6 +42,7 @@ vi.mock('@/stores/toast', () => ({
 function makeBudget(overrides: Partial<Budget> = {}): Budget {
   return {
     id: 'budget-1',
+    name: '',
     month: '2026-03-01',
     amount: 150,
     spent: 80,
