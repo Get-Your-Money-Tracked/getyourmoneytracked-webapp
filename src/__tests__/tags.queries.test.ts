@@ -28,7 +28,7 @@ beforeEach(() => {
 describe('callUsedTags', () => {
   it('returns array of tag strings', async () => {
     mockToPromise.mockResolvedValueOnce({
-      data: { usedTags: ['food', 'travel', 'gift'] },
+      data: { usedTags: [{ name: 'food' }, { name: 'travel' }, { name: 'gift' }] },
       error: undefined,
     })
 

@@ -7,6 +7,7 @@ import { useCategoriesStore } from '@/stores/categories'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import { callUsedTags } from '@/graphql/queries/tags'
+import { validateTags } from '@/utils/tags'
 import NumPad from '@/components/common/NumPad.vue'
 import AmountDisplay from '@/components/common/AmountDisplay.vue'
 import TransactionTypeToggle from '@/components/common/TransactionTypeToggle.vue'
@@ -145,7 +146,7 @@ watch(
       if (accountsStore.accounts.length === 0) accountsStore.loadAccounts()
       if (categoriesStore.categories.length === 0) categoriesStore.loadCategories()
       // Load available tags for autocomplete
-      callUsedTags().then((t) => { availableTags.value = t }).catch(() => {})
+      callUsedTags().then((t) => { availableTags.value = t }).catch((e) => console.error('Failed to load tags:', e))
     }
   },
 )
@@ -171,6 +172,17 @@ function cancelDiscard() {
 async function handleSubmit() {
   if (isSaveDisabled.value) return
 
+  if (!accountId.value) {
+    submitError.value = 'Please select an account.'
+    return
+  }
+
+  const tagError = validateTags(tags.value)
+  if (tagError) {
+    submitError.value = tagError
+    return
+  }
+
   isSubmitting.value = true
   submitError.value = null
 
@@ -179,7 +191,7 @@ async function handleSubmit() {
       type: transactionType.value,
       amount: parseFloat(amountString.value),
       date: selectedDate.value,
-      accountId: accountId.value!,
+      accountId: accountId.value,
       toAccountId: transactionType.value === 'TRANSFER' ? toAccountId.value : null,
       categoryId: transactionType.value !== 'TRANSFER' ? categoryId.value : null,
       description: description.value.trim() || null,

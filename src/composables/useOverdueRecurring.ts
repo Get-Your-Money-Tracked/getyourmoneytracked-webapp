@@ -169,11 +169,15 @@ export function useOverdueRecurring(subscriptions: () => SubscriptionEntry[]) {
 
     await Promise.all(
       items.map(async ({ subscription }) => {
+        if (!subscription.nextDueDate) {
+          throw new Error(`Subscription "${subscription.name}" has no next due date and cannot be logged.`)
+        }
+
         // 1. Create transaction
         await callCreateTransaction({
           type: subscription.type as 'EXPENSE' | 'INCOME',
           amount: subscription.amount,
-          date: subscription.nextDueDate!,
+          date: subscription.nextDueDate,
           accountId: subscription.account.id,
           categoryId: subscription.category?.id ?? null,
           description: subscription.name,
@@ -181,7 +185,7 @@ export function useOverdueRecurring(subscriptions: () => SubscriptionEntry[]) {
 
         // 2. Advance nextDueDate
         const nextDate = getNextDueDate(
-          subscription.nextDueDate!,
+          subscription.nextDueDate,
           subscription.frequency,
           subscription.dayOfMonth,
         )

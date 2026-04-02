@@ -104,6 +104,16 @@ const SKELETON_COUNT = 3
         </div>
       </template>
 
+      <!-- Error state -->
+      <template v-else-if="accountsStore.error">
+        <div
+          class="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-body text-danger"
+          role="alert"
+        >
+          {{ accountsStore.error }}
+        </div>
+      </template>
+
       <!-- Empty state -->
       <template v-else-if="!hasAccounts">
         <EmptyState

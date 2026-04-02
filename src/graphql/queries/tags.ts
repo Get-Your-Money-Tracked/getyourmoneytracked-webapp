@@ -4,7 +4,9 @@ import { urqlClient } from '@/lib/urql'
 
 const USED_TAGS_QUERY = `
   query UsedTags {
-    usedTags
+    usedTags {
+      name
+    }
   }
 `
 
@@ -46,7 +48,7 @@ export async function callUsedTags(): Promise<string[]> {
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to fetch tags.')
   }
-  return (result.data?.usedTags as string[]) ?? []
+  return (result.data?.usedTags as { name: string }[])?.map((t) => t.name) ?? []
 }
 
 /** Returns all distinct tags with transaction counts. */

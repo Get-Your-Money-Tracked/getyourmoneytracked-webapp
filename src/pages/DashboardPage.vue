@@ -46,13 +46,18 @@ const { overdueItems, isVisible: overdueVisible, dismiss: dismissOverdue, logIte
 const showLogRecurringSheet = ref(false)
 
 async function handleLoggedRecurring(count: number, total: number) {
-  // Perform the actual logging via the composable
-  await logItems(overdueItems.value)
-  // Reload subscriptions so the store reflects updated nextDueDates
-  await subscriptionsStore.loadSubscriptions()
-  const msg = `Logged ${count} recurring ${count === 1 ? 'transaction' : 'transactions'} (${formatCurrency(total, authStore.defaultCurrency)})`
-  toastStore.show(msg, 'success')
-  loadDashboard()
+  try {
+    // Perform the actual logging via the composable
+    await logItems(overdueItems.value)
+    // Reload subscriptions so the store reflects updated nextDueDates
+    await subscriptionsStore.loadSubscriptions()
+    const msg = `Logged ${count} recurring ${count === 1 ? 'transaction' : 'transactions'} (${formatCurrency(total, authStore.defaultCurrency)})`
+    toastStore.show(msg, 'success')
+    loadDashboard()
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message ?? 'Failed to log recurring transactions.'
+    toastStore.show(msg, 'error')
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -130,8 +135,8 @@ function finishLoading() {
 async function loadDashboard(bypassCache = false) {
   startLoading()
   try {
-    // Run all three fetches concurrently; partial failures don't block render
-    const [dashResult, catResult, accResult] = await Promise.allSettled([
+    // Run all fetches concurrently; partial failures don't block render
+    const [dashResult, catResult, accResult, subResult, goalResult] = await Promise.allSettled([
       fetchDashboard(selectedMonth.value, bypassCache),
       categoriesStore.categories.length === 0 ? categoriesStore.loadCategories() : Promise.resolve(),
       accountsStore.accounts.length === 0 ? accountsStore.loadAccounts() : Promise.resolve(),
@@ -146,9 +151,12 @@ async function loadDashboard(bypassCache = false) {
       dashboard.value = dashResult.value
     }
 
-    // Warn if supporting stores failed but dashboard succeeded
+    // Warn if any supporting store failed but dashboard succeeded
     const storesFailed =
-      catResult.status === 'rejected' || accResult.status === 'rejected'
+      catResult.status === 'rejected' ||
+      accResult.status === 'rejected' ||
+      subResult.status === 'rejected' ||
+      goalResult.status === 'rejected'
     if (storesFailed && dashResult.status === 'fulfilled') {
       toastStore.show("Some data couldn't be loaded.", 'error')
     }

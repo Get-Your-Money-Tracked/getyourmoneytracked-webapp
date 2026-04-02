@@ -40,13 +40,19 @@ const parsedAmount = computed(() => {
   return isNaN(v) ? 0 : v
 })
 
+const MAX_BUDGET_AMOUNT = 999_999_999.99
+
 const isFormValid = computed(
-  () => selectedCategoryId.value !== '' && parsedAmount.value > 0,
+  () => selectedCategoryId.value !== '' && parsedAmount.value > 0 && parsedAmount.value <= MAX_BUDGET_AMOUNT,
 )
 
 function validateAmount(): boolean {
   if (parsedAmount.value <= 0) {
     amountError.value = 'Amount must be greater than 0.'
+    return false
+  }
+  if (parsedAmount.value > MAX_BUDGET_AMOUNT) {
+    amountError.value = 'Amount is too large.'
     return false
   }
   amountError.value = null

@@ -144,6 +144,17 @@ function prefillFromTransaction(tx: Transaction) {
   isDeleting.value = false
   isAmountReset.value = false
 
+  // Warn if referenced account or category was deleted since this transaction was created
+  const accountMissing = tx.accountId && !accountsStore.accounts.some((a) => a.id === tx.accountId)
+  const categoryMissing =
+    tx.categoryId && !categoriesStore.categories.some((c) => c.id === tx.categoryId)
+  if (accountMissing || categoryMissing) {
+    submitError.value =
+      'This transaction references a deleted ' +
+      [accountMissing && 'account', categoryMissing && 'category'].filter(Boolean).join(' and ') +
+      '. Please update the fields before saving.'
+  }
+
   // Snapshot original values for dirty checking
   originalSnapshot.value = {
     type: tx.type,

@@ -67,6 +67,10 @@ export async function callUpdateUser(
   if (displayName !== undefined) input.displayName = displayName
   if (defaultCurrency !== undefined) input.defaultCurrency = defaultCurrency
 
+  if (Object.keys(input).length === 0) {
+    throw new Error('At least one field (displayName or defaultCurrency) must be provided.')
+  }
+
   const result = await urqlClient
     .mutation(UPDATE_USER_MUTATION, { input })
     .toPromise()
@@ -74,7 +78,10 @@ export async function callUpdateUser(
   if (result.error) {
     throw new Error(result.error.message ?? 'Failed to update user profile.')
   }
-  return result.data.updateUser
+  if (!result.data?.updateUser) {
+    throw new Error('No data returned from updateUser.')
+  }
+  return result.data.updateUser as MeResult
 }
 
 export async function callMe(): Promise<MeResult | null> {
