@@ -62,6 +62,43 @@ export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
   { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
 ]
 
+// ── Category defaults ─────────────────────────────────────────────────────────
+
+/** Preset emoji icons for category creation/editing */
+export const CATEGORY_ICON_OPTIONS = [
+  // Home & Living
+  '🏠', '🏡', '🪴', '🛋️', '🧹',
+  // Food & Drink
+  '🍽️', '☕', '🍕', '🛒', '🍺',
+  // Transport
+  '🚗', '⛽', '🚌', '🚲', '🛵',
+  // Bills & Utilities
+  '⚡', '💧', '📱', '📡', '🔌',
+  // Entertainment
+  '🎬', '🎮', '🎵', '🎭', '📺',
+  // Health & Wellness
+  '❤️', '💊', '🏋️', '🧘', '🩺',
+  // Shopping
+  '🛍️', '👕', '👟', '💄', '🎁',
+  // Education & Work
+  '📚', '🎓', '💼', '💻', '🖊️',
+  // Travel
+  '✈️', '🏖️', '🏔️', '🧳', '⛺',
+  // Finance
+  '💰', '🏦', '💳', '📈', '🪙',
+  // Pets & Family
+  '🐾', '👶', '👨‍👩‍👧', '🧸', '🐕',
+  // Other
+  '🔧', '🏪', '📦', '🎂', '⭐',
+]
+
+/** Preset colors for category creation/editing */
+export const CATEGORY_PRESET_COLORS = [
+  '#4CAF50', '#FF9800', '#2196F3', '#9C27B0',
+  '#E91E63', '#F44336', '#00BCD4', '#FF5722',
+  '#3F51B5', '#607D8B', '#795548', '#CDDC39',
+]
+
 /** localStorage key for persisting the user's display name override */
 export const DISPLAY_NAME_KEY = 'gymt_display_name'
 

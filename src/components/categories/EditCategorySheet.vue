@@ -5,6 +5,7 @@ import { useTransactionsStore } from '@/stores/transactions'
 import { useToastStore } from '@/stores/toast'
 import type { Category } from '@/types'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
+import { CATEGORY_ICON_OPTIONS, CATEGORY_PRESET_COLORS } from '@/utils/constants'
 
 const props = defineProps<{
   open: boolean
@@ -32,19 +33,9 @@ const nameError = ref<string | null>(null)
 const nameWarning = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 
-// ── Icon options ──────────────────────────────────────────────
-const ICON_OPTIONS = [
-  '🏠', '🍽️', '🚗', '⚡', '🎬', '❤️', '🛍️', '🎁',
-  '📚', '☕', '✈️', '🏋️', '🎵', '🐾', '💊', '🔧',
-  '🎓', '💼', '🏪', '🎮',
-]
-
-// ── Preset colors ─────────────────────────────────────────────
-const PRESET_COLORS = [
-  '#4CAF50', '#FF9800', '#2196F3', '#9C27B0',
-  '#E91E63', '#F44336', '#00BCD4', '#FF5722',
-  '#3F51B5', '#607D8B', '#795548', '#CDDC39',
-]
+// ── Icon & color options (shared constant) ────────────────────
+const ICON_OPTIONS = CATEGORY_ICON_OPTIONS
+const PRESET_COLORS = CATEGORY_PRESET_COLORS
 
 // ── Derived: category has transactions? ───────────────────────
 const hasTransactions = computed(() => {

@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { useCategoriesStore } from '@/stores/categories'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
+import { CATEGORY_ICON_OPTIONS, CATEGORY_PRESET_COLORS } from '@/utils/constants'
 
 const props = defineProps<{
   open: boolean
@@ -24,19 +25,9 @@ const submitError = ref<string | null>(null)
 const nameError = ref<string | null>(null)
 const nameWarning = ref<string | null>(null)
 
-// ── Icon options ──────────────────────────────────────────────
-const ICON_OPTIONS = [
-  '🏠', '🍽️', '🚗', '⚡', '🎬', '❤️', '🛍️', '🎁',
-  '📚', '☕', '✈️', '🏋️', '🎵', '🐾', '💊', '🔧',
-  '🎓', '💼', '🏪', '🎮',
-]
-
-// ── Preset colors ─────────────────────────────────────────────
-const PRESET_COLORS = [
-  '#4CAF50', '#FF9800', '#2196F3', '#9C27B0',
-  '#E91E63', '#F44336', '#00BCD4', '#FF5722',
-  '#3F51B5', '#607D8B', '#795548', '#CDDC39',
-]
+// ── Icon & color options (shared constant) ────────────────────
+const ICON_OPTIONS = CATEGORY_ICON_OPTIONS
+const PRESET_COLORS = CATEGORY_PRESET_COLORS
 
 // ── Top-level categories for parent dropdown ──────────────────
 const parentOptions = computed(() =>
