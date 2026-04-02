@@ -159,6 +159,8 @@ export interface UpdateSubscriptionInput {
   nextDueDate?: string | null
   /** Toggle auto-log flag. */
   autoLog?: boolean
+  /** When true, forces nextDueDate into the current month even if dayOfMonth has passed. */
+  includeCurrentMonth?: boolean
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────

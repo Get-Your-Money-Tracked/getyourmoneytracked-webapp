@@ -33,6 +33,7 @@ const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
 const dayOfMonthInput = ref<string>('1')
 const isActiveInput = ref<boolean>(true)
 const autoLogInput = ref<boolean>(false)
+const includeCurrentMonthInput = ref<boolean>(false)
 
 const isUpdating = ref(false)
 const isDeleting = ref(false)
@@ -54,6 +55,13 @@ const parsedDayOfMonth = computed(() => {
 })
 
 const showDayOfMonth = computed(() => frequencyInput.value === 'MONTHLY')
+
+const nextDueInFutureMonth = computed(() => {
+  if (!showDayOfMonth.value || !props.subscription?.nextDueDate) return false
+  const today = new Date()
+  const nextDue = new Date(props.subscription.nextDueDate)
+  return nextDue.getMonth() !== today.getMonth() || nextDue.getFullYear() !== today.getFullYear()
+})
 
 const isFormValid = computed(() => {
   if (!nameInput.value.trim()) return false
@@ -82,6 +90,7 @@ watch(
       dayOfMonthInput.value = s.dayOfMonth?.toString() ?? '1'
       isActiveInput.value = s.isActive
       autoLogInput.value = s.autoLog
+      includeCurrentMonthInput.value = false
       isUpdating.value = false
       isDeleting.value = false
       updateError.value = null
@@ -151,6 +160,7 @@ async function handleUpdate() {
       dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
       isActive: isActiveInput.value,
       autoLog: autoLogInput.value,
+      includeCurrentMonth: includeCurrentMonthInput.value || undefined,
     })
     emit('saved')
     emit('close')
@@ -471,6 +481,24 @@ async function confirmDelete() {
           type="checkbox"
           class="h-5 w-5 rounded accent-primary"
           data-testid="autolog-toggle"
+        />
+      </div>
+
+      <!-- Include current month toggle (when nextDueDate is in a future month) -->
+      <div
+        v-if="nextDueInFutureMonth"
+        class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
+        data-testid="include-current-month-section"
+      >
+        <div>
+          <p class="text-body text-text-primary">Move to this month</p>
+          <p class="text-caption text-text-secondary">Next due is {{ subscription?.nextDueDate }} — include this month?</p>
+        </div>
+        <input
+          v-model="includeCurrentMonthInput"
+          type="checkbox"
+          class="h-5 w-5 rounded accent-primary"
+          data-testid="include-current-month-toggle"
         />
       </div>
 
