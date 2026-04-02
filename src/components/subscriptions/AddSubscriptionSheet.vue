@@ -32,6 +32,7 @@ const selectedAccountId = ref<string>('')
 const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
 const dayOfMonthInput = ref<string>('1')
 const autoLogInput = ref<boolean>(false)
+const includeCurrentMonthInput = ref<boolean>(true)
 
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
@@ -51,6 +52,12 @@ const parsedDayOfMonth = computed(() => {
 })
 
 const showDayOfMonth = computed(() => frequencyInput.value === 'MONTHLY')
+
+const dayAlreadyPassed = computed(() => {
+  if (!showDayOfMonth.value) return false
+  const today = new Date()
+  return parsedDayOfMonth.value < today.getDate()
+})
 
 const defaultAccount = computed(() => props.accounts.find((a) => a.isDefault) ?? props.accounts[0] ?? null)
 
@@ -146,6 +153,7 @@ async function handleSubmit() {
       frequency: frequencyInput.value,
       dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
       autoLog: autoLogInput.value,
+      includeCurrentMonth: dayAlreadyPassed.value ? includeCurrentMonthInput.value : undefined,
     })
     emit('created')
     emit('close')
@@ -352,6 +360,24 @@ async function handleSubmit() {
           type="checkbox"
           class="h-5 w-5 rounded accent-primary"
           data-testid="autolog-toggle"
+        />
+      </div>
+
+      <!-- Include current month toggle (only when day already passed) -->
+      <div
+        v-if="dayAlreadyPassed"
+        class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
+        data-testid="include-current-month-section"
+      >
+        <div>
+          <p class="text-body text-text-primary">Include this month</p>
+          <p class="text-caption text-text-secondary">Day {{ parsedDayOfMonth }} already passed — count it anyway?</p>
+        </div>
+        <input
+          v-model="includeCurrentMonthInput"
+          type="checkbox"
+          class="h-5 w-5 rounded accent-primary"
+          data-testid="include-current-month-toggle"
         />
       </div>
 

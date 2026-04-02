@@ -143,6 +143,8 @@ export interface CreateSubscriptionInput {
   dayOfMonth?: number | null
   startDate?: string | null
   autoLog?: boolean
+  /** When true and dayOfMonth has already passed, first occurrence is this month (overdue). */
+  includeCurrentMonth?: boolean
 }
 
 export interface UpdateSubscriptionInput {
