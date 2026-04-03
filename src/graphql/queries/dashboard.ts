@@ -14,6 +14,8 @@ function parseDashboardMoney(raw: Record<string, unknown>): Dashboard {
     ...raw,
     totalIncome: parseMoney(raw.totalIncome),
     totalExpenses: parseMoney(raw.totalExpenses),
+    recurringIncome: parseMoney(raw.recurringIncome),
+    recurringExpenses: parseMoney(raw.recurringExpenses),
     remainingBudget: parseMoney(raw.remainingBudget),
     recentTransactions: recentTransactions.map((t) => ({
       ...t,
@@ -40,6 +42,8 @@ const DASHBOARD_QUERY = `
       month
       totalIncome
       totalExpenses
+      recurringIncome
+      recurringExpenses
       remainingBudget
       percentSpent
       recentTransactions {

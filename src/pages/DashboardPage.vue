@@ -331,6 +331,8 @@ onUnmounted(() => {
           <HeroSection
             :total-income="dashboard.totalIncome"
             :total-expenses="dashboard.totalExpenses"
+            :recurring-income="dashboard.recurringIncome"
+            :recurring-expenses="dashboard.recurringExpenses"
             :remaining-budget="dashboard.remainingBudget"
             :percent-spent="dashboard.percentSpent"
             :currency="authStore.defaultCurrency"

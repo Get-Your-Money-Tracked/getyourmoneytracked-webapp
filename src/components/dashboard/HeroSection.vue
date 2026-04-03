@@ -10,6 +10,8 @@ const CALLOUT_KEY = 'callout_dismissed'
 const props = defineProps<{
   totalIncome: number
   totalExpenses: number
+  recurringIncome: number
+  recurringExpenses: number
   remainingBudget: number
   percentSpent: number
   currency: string
@@ -50,6 +52,17 @@ const formattedRemaining = computed(() => {
 
 const formattedIncome = computed(() => formatCurrency(props.totalIncome, props.currency))
 const formattedExpenses = computed(() => formatCurrency(props.totalExpenses, props.currency))
+
+const hasRecurring = computed(
+  () => props.recurringIncome > 0 || props.recurringExpenses > 0,
+)
+const oneTimeIncome = computed(() => props.totalIncome - props.recurringIncome)
+const oneTimeExpenses = computed(() => props.totalExpenses - props.recurringExpenses)
+
+const formattedRecurringIncome = computed(() => formatCurrency(props.recurringIncome, props.currency))
+const formattedOneTimeIncome = computed(() => formatCurrency(oneTimeIncome.value, props.currency))
+const formattedRecurringExpenses = computed(() => formatCurrency(props.recurringExpenses, props.currency))
+const formattedOneTimeExpenses = computed(() => formatCurrency(oneTimeExpenses.value, props.currency))
 
 const noIncome = computed(() => props.totalIncome === 0)
 </script>
@@ -92,6 +105,36 @@ const noIncome = computed(() => props.totalIncome === 0)
           <span class="text-danger font-medium">Out:</span>
           <span class="ml-1">{{ formattedExpenses }}</span>
         </p>
+
+        <!-- Recurring vs One-time breakdown -->
+        <div
+          v-if="hasRecurring"
+          class="mt-2 grid grid-cols-2 gap-x-4 text-badge text-text-muted"
+          data-testid="recurring-breakdown"
+        >
+          <!-- Income breakdown -->
+          <div class="text-right">
+            <p>
+              <span class="text-primary/70">Recurring:</span>
+              <span class="ml-1 tabular-nums">{{ formattedRecurringIncome }}</span>
+            </p>
+            <p>
+              <span class="text-primary/70">One-time:</span>
+              <span class="ml-1 tabular-nums">{{ formattedOneTimeIncome }}</span>
+            </p>
+          </div>
+          <!-- Expense breakdown -->
+          <div class="text-left">
+            <p>
+              <span class="text-danger/70">Recurring:</span>
+              <span class="ml-1 tabular-nums">{{ formattedRecurringExpenses }}</span>
+            </p>
+            <p>
+              <span class="text-danger/70">One-time:</span>
+              <span class="ml-1 tabular-nums">{{ formattedOneTimeExpenses }}</span>
+            </p>
+          </div>
+        </div>
 
         <!-- Monthly progress bar -->
         <MonthlyProgressBar :percent-spent="percentSpent" :no-income="noIncome" />

@@ -135,6 +135,8 @@ export interface Dashboard {
   month: string
   totalIncome: number
   totalExpenses: number
+  recurringIncome: number
+  recurringExpenses: number
   remainingBudget: number
   percentSpent: number
   recentTransactions: Transaction[]
