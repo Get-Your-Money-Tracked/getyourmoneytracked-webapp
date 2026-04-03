@@ -5,6 +5,8 @@ import HeroSection from '@/components/dashboard/HeroSection.vue'
 function mountHero(overrides: {
   totalIncome?: number
   totalExpenses?: number
+  recurringIncome?: number
+  recurringExpenses?: number
   remainingBudget?: number
   percentSpent?: number
   currency?: string
@@ -14,6 +16,8 @@ function mountHero(overrides: {
     props: {
       totalIncome: overrides.totalIncome ?? 3000,
       totalExpenses: overrides.totalExpenses ?? 1200,
+      recurringIncome: overrides.recurringIncome ?? 0,
+      recurringExpenses: overrides.recurringExpenses ?? 0,
       remainingBudget: overrides.remainingBudget ?? 1800,
       percentSpent: overrides.percentSpent ?? 40,
       currency: overrides.currency ?? 'USD',

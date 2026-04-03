@@ -71,6 +71,8 @@ function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     month: '2026-03',
     totalIncome: 3000,
     totalExpenses: 1200,
+    recurringIncome: 0,
+    recurringExpenses: 0,
     remainingBudget: 1800,
     percentSpent: 40,
     recentTransactions: [],
