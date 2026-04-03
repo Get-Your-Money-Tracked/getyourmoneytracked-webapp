@@ -78,6 +78,7 @@ function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     recentTransactions: [],
     upcomingBills: [],
     budgetProgress: [],
+    recentSubscriptions: [],
     ...overrides,
   }
 }

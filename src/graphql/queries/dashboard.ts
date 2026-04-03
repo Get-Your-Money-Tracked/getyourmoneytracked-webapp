@@ -9,6 +9,7 @@ function parseDashboardMoney(raw: Record<string, unknown>): Dashboard {
   const recentTransactions = (raw.recentTransactions as Record<string, unknown>[]) ?? []
   const upcomingBills = (raw.upcomingBills as Record<string, unknown>[]) ?? []
   const budgetProgress = (raw.budgetProgress as Record<string, unknown>[]) ?? []
+  const recentSubscriptions = (raw.recentSubscriptions as Record<string, unknown>[]) ?? []
 
   return {
     ...raw,
@@ -30,6 +31,10 @@ function parseDashboardMoney(raw: Record<string, unknown>): Dashboard {
       limit: parseMoney(bp.limit),
       spent: parseMoney(bp.spent),
       remaining: parseMoney(bp.remaining),
+    })),
+    recentSubscriptions: recentSubscriptions.map((s) => ({
+      ...s,
+      amount: parseMoney(s.amount),
     })),
   } as Dashboard
 }
@@ -80,6 +85,29 @@ const DASHBOARD_QUERY = `
         remaining
         percentUsed
         status
+      }
+      recentSubscriptions {
+        id
+        name
+        type
+        amount
+        category {
+          id
+          name
+          icon
+          color
+        }
+        account {
+          id
+          name
+          type
+          currency
+        }
+        frequency
+        dayOfMonth
+        nextDueDate
+        isActive
+        autoLog
       }
     }
   }

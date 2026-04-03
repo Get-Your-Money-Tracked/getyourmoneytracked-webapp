@@ -26,6 +26,7 @@ import EditTransactionSheet from '@/components/transactions/EditTransactionSheet
 import PageTip from '@/components/common/PageTip.vue'
 import OverdueBanner from '@/components/dashboard/OverdueBanner.vue'
 import GoalsWidget from '@/components/dashboard/GoalsWidget.vue'
+import RecentRecurring from '@/components/dashboard/RecentRecurring.vue'
 import LogRecurringSheet from '@/components/subscriptions/LogRecurringSheet.vue'
 
 // ── Stores / routing ──────────────────────────────────────────────────────────
@@ -376,6 +377,12 @@ onUnmounted(() => {
 
           <!-- Upcoming Bills -->
           <UpcomingBills :bills="dashboard.upcomingBills" />
+
+          <!-- Recent Recurring -->
+          <RecentRecurring
+            :subscriptions="dashboard.recentSubscriptions"
+            :currency="authStore.defaultCurrency"
+          />
 
           <!-- Budget Progress -->
           <BudgetProgressSection

@@ -142,6 +142,7 @@ export interface Dashboard {
   recentTransactions: Transaction[]
   upcomingBills: UpcomingBill[]
   budgetProgress: BudgetProgress[]
+  recentSubscriptions: SubscriptionEntry[]
 }
 
 export interface Goal {
