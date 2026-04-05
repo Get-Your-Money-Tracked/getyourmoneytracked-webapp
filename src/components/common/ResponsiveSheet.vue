@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useResponsive } from '@/composables/useResponsive'
 
@@ -35,13 +35,19 @@ onMounted(() => document.addEventListener('keydown', onKeydown))
 onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
 // ── Mobile swipe-to-dismiss ───────────────────────────────────
+// Only allow swipe-to-dismiss when the sheet content is scrolled to
+// the top. This prevents accidental dismissal while scrolling forms.
+const sheetEl = ref<HTMLElement | null>(null)
 let touchStartY = 0
+let canDismiss = false
 
 function onTouchStart(e: TouchEvent) {
   touchStartY = e.touches[0].clientY
+  canDismiss = sheetEl.value ? sheetEl.value.scrollTop <= 0 : true
 }
 
 function onTouchEnd(e: TouchEvent) {
+  if (!canDismiss) return
   const delta = e.changedTouches[0].clientY - touchStartY
   if (delta > 60) emit('close')
 }
@@ -108,6 +114,7 @@ function onTouchEnd(e: TouchEvent) {
         v-if="open"
         class="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-surface pb-safe"
         :style="{ boxShadow: 'var(--shadow-sheet)' }"
+        ref="sheetEl"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
