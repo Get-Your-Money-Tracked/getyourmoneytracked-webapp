@@ -4,12 +4,14 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss(), cloudflare()],
     resolve: {
       alias: {
         '@': resolve(__dirname, './src'),
@@ -29,5 +31,5 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./src/__tests__/setup.ts'],
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
     },
-  }
+  };
 })
