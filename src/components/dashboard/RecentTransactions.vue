@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ArrowRight } from 'lucide-vue-next'
 import type { Transaction, Account, Category } from '@/types'
 import { getCurrencySymbol } from '@/utils/currency'
@@ -16,9 +16,11 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const route = useRoute()
 
 function navigateToAll() {
-  router.push('/transactions')
+  const month = (route.query.month as string) || new Date().toISOString().slice(0, 7)
+  router.push(`/history/${month}`)
 }
 
 function formatDate(dateStr: string): string {
