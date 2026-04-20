@@ -13,6 +13,7 @@ import CreateBudgetSheet from '@/components/budgets/CreateBudgetSheet.vue'
 import EditBudgetSheet from '@/components/budgets/EditBudgetSheet.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import PageTip from '@/components/common/PageTip.vue'
+import { useFabAction } from '@/composables/useFabAction'
 
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
@@ -33,6 +34,8 @@ onMounted(async () => {
 function openCreate() {
   showCreateSheet.value = true
 }
+
+useFabAction({ label: 'Add budget', handler: openCreate })
 
 function onCreated() {
   toastStore.show('Budget created', 'success')

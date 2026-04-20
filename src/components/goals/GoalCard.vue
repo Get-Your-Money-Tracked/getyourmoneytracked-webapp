@@ -43,7 +43,7 @@ const formattedTargetDate = computed(() => {
 <template>
   <div
     class="mx-4 mt-3 cursor-pointer rounded-xl p-4 shadow-card transition-transform duration-100 active:scale-[0.98]"
-    :class="isReached ? 'border border-primary/20 bg-primary/5' : 'bg-surface'"
+    :class="isReached ? 'border border-primary/20 bg-primary/5' : 'border border-border bg-surface'"
     data-testid="goal-card"
     @click="emit('click', goal)"
   >

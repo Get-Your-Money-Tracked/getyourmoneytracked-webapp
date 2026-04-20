@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Pencil, Trash2 } from 'lucide-vue-next'
+import { Pencil, Trash2, Tag } from 'lucide-vue-next'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { callTagUsageCounts, callRenameTag, callDeleteTag } from '@/graphql/queries/tags'
 import type { TagUsage } from '@/graphql/queries/tags'
 import { useToastStore } from '@/stores/toast'
@@ -100,14 +101,13 @@ async function handleDelete(name: string) {
       </div>
 
       <!-- Empty state -->
-      <div
+      <EmptyState
         v-else-if="tags.length === 0"
-        class="text-center py-12"
+        :icon="Tag"
+        title="No tags yet"
+        description="Tags help you organize transactions. Add tags when creating or editing a transaction."
         data-testid="tags-empty-state"
-      >
-        <p class="text-body text-text-secondary">No tags yet.</p>
-        <p class="text-caption text-text-muted mt-1">Start by adding tags to your transactions.</p>
-      </div>
+      />
 
       <!-- Tag list -->
       <div

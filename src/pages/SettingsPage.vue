@@ -15,7 +15,8 @@ import {
   Shield,
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
+import { useThemeStore, ACCENT_COLOR_OPTIONS } from '@/stores/theme'
+import type { AccentColor } from '@/stores/theme'
 import { useToastStore } from '@/stores/toast'
 import EditProfileForm from '@/components/settings/EditProfileForm.vue'
 
@@ -86,6 +87,21 @@ function cancelDeleteAccount() {
 }
 
 const canConfirmDelete = computed(() => deleteConfirmText.value === 'DELETE')
+
+const accentSwatchColors: Record<AccentColor, string> = {
+  emerald: '#10b981',
+  blue: '#3b82f6',
+  violet: '#8b5cf6',
+  rose: '#f43f5e',
+  amber: '#f59e0b',
+  cyan: '#06b6d4',
+  orange: '#f97316',
+  indigo: '#6366f1',
+}
+
+function accentSwatchColor(color: AccentColor): string {
+  return accentSwatchColors[color]
+}
 
 async function confirmDeleteAccount() {
   if (!canConfirmDelete.value) return
@@ -354,6 +370,51 @@ async function confirmDeleteAccount() {
               :class="themeStore.isDark ? 'translate-x-5' : 'translate-x-0.5'"
             />
           </button>
+        </div>
+
+        <div class="border-t border-border" />
+
+        <!-- AMOLED Dark Mode toggle (only visible in dark mode) -->
+        <div v-if="themeStore.isDark" class="flex items-center gap-3 px-4 py-3.5">
+          <Moon :size="20" class="flex-shrink-0 text-text-secondary" />
+          <div class="flex-1">
+            <span class="text-body text-text-primary">AMOLED Dark</span>
+            <p class="text-caption text-text-muted">True black for OLED screens</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="themeStore.amoledMode"
+            class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+            :class="themeStore.amoledMode ? 'bg-primary' : 'bg-surface-muted'"
+            data-testid="amoled-toggle"
+            @click="themeStore.toggleAmoled()"
+          >
+            <span
+              class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+              :class="themeStore.amoledMode ? 'translate-x-5' : 'translate-x-0.5'"
+            />
+          </button>
+        </div>
+
+        <div class="border-t border-border" />
+
+        <!-- Accent Color Picker -->
+        <div class="px-4 py-3.5">
+          <span class="text-body text-text-primary">Accent Color</span>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="color in ACCENT_COLOR_OPTIONS"
+              :key="color"
+              type="button"
+              class="h-8 w-8 rounded-full border-2 transition-transform duration-100 hover:scale-110 active:scale-95"
+              :class="themeStore.accentColor === color ? 'border-text-primary ring-2 ring-primary/30' : 'border-transparent'"
+              :style="{ backgroundColor: accentSwatchColor(color) }"
+              :aria-label="`Set accent color to ${color}`"
+              :data-testid="`accent-${color}`"
+              @click="themeStore.setAccent(color)"
+            />
+          </div>
         </div>
 
         <div class="border-t border-border" />

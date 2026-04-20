@@ -11,6 +11,7 @@ import EditAccountSheet from '@/components/accounts/EditAccountSheet.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import type { Account } from '@/types'
 import PageTip from '@/components/common/PageTip.vue'
+import { useFabAction } from '@/composables/useFabAction'
 
 const accountsStore = useAccountsStore()
 const authStore = useAuthStore()
@@ -29,6 +30,8 @@ const hasAccounts = computed(() => accountsStore.accounts.length > 0)
 function openAddSheet() {
   showAddSheet.value = true
 }
+
+useFabAction({ label: 'Add account', handler: openAddSheet })
 
 function closeAddSheet() {
   showAddSheet.value = false

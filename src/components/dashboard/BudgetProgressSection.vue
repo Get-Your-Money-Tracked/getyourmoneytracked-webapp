@@ -44,7 +44,7 @@ function navigateToAll() {
     <!-- Budget cards -->
     <div
       v-if="hasBudgets"
-      class="mx-4 divide-y divide-border rounded-xl bg-surface shadow-card"
+      class="mx-4 divide-y divide-border rounded-xl border border-border bg-surface shadow-card"
     >
       <BudgetProgressCard
         v-for="budget in topBudgets"

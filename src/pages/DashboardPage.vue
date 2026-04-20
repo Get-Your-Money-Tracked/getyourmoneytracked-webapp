@@ -242,8 +242,15 @@ function onWindowFocus() {
 
 // ── Quick Actions / Add Transaction Sheet ─────────────────────────────────────
 const showAddTransaction = ref(false)
+const prefillTransaction = ref<Transaction | null>(null)
 
 function openAddTransaction() {
+  prefillTransaction.value = null
+  showAddTransaction.value = true
+}
+
+function repeatTransaction(tx: Transaction) {
+  prefillTransaction.value = tx
   showAddTransaction.value = true
 }
 
@@ -373,6 +380,7 @@ onUnmounted(() => {
             :accounts="accountsStore.accounts"
             :categories="categoriesStore.categories"
             @edit="openEditTransaction"
+            @repeat="repeatTransaction"
           />
 
           <!-- Upcoming Bills -->
@@ -402,6 +410,7 @@ onUnmounted(() => {
     <!-- Add Transaction Sheet -->
     <AddTransactionSheet
       :open="showAddTransaction"
+      :prefill="prefillTransaction"
       @close="showAddTransaction = false"
       @created="onTransactionCreated"
     />

@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Tag,
 } from 'lucide-vue-next'
+import { getFabAction } from '@/composables/useFabAction'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +24,16 @@ const router = useRouter()
 const emit = defineEmits<{
   'add-transaction': []
 }>()
+
+const fabAction = getFabAction()
+
+function onFabClick() {
+  if (fabAction.value) {
+    fabAction.value.handler()
+  } else {
+    emit('add-transaction')
+  }
+}
 
 // ── Active tab detection ──────────────────────────────────────
 const activeTab = computed(() => {
@@ -205,10 +216,10 @@ function navigateTo(path: string) {
       <div class="relative flex flex-1 items-center justify-center">
         <button
           type="button"
-          aria-label="Add transaction"
+          :aria-label="fabAction?.label ?? 'Add transaction'"
           class="-translate-y-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-surface transition-transform duration-100 active:scale-95 active:bg-primary-hover dark:ring-slate-900"
           data-testid="nav-add-transaction"
-          @click="emit('add-transaction')"
+          @click="onFabClick"
         >
           <Plus :size="28" :stroke-width="2.5" />
         </button>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { BarChart3 } from 'lucide-vue-next'
+import { BarChart3, Download } from 'lucide-vue-next'
 import TimeRangeSelector from '@/components/reports/TimeRangeSelector.vue'
 import CustomDateRangeSheet from '@/components/reports/CustomDateRangeSheet.vue'
 import TrendsSummaryCards from '@/components/reports/TrendsSummaryCards.vue'
 import SpendingTrendsChart from '@/components/reports/SpendingTrendsChart.vue'
 import IncomeExpensesChart from '@/components/reports/IncomeExpensesChart.vue'
 import CategoryBreakdownChart from '@/components/reports/CategoryBreakdownChart.vue'
+import ExportSheet from '@/components/export/ExportSheet.vue'
 import type { DateRange } from '@/components/reports/TimeRangeSelector.vue'
 import { callSpendingTrends, type SpendingTrendsResult } from '@/graphql/queries/reports'
 import { presetToRange } from '@/components/reports/TimeRangeSelector.vue'
@@ -21,6 +22,7 @@ const currentRange = ref<DateRange | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const result = ref<SpendingTrendsResult | null>(null)
+const showExportSheet = ref(false)
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -79,6 +81,15 @@ onMounted(() => {
           Reports
         </h1>
       </div>
+      <button
+        type="button"
+        class="ml-auto rounded-lg p-2 text-text-secondary transition-colors hover:bg-surface-muted hover:text-primary"
+        aria-label="Export transactions"
+        data-testid="export-trigger"
+        @click="showExportSheet = true"
+      >
+        <Download :size="20" />
+      </button>
     </header>
 
     <!-- Time Range Selector -->
@@ -148,5 +159,8 @@ onMounted(() => {
         <CategoryBreakdownChart :categories="result?.categoryBreakdown ?? []" />
       </section>
     </div>
+
+    <!-- Export Sheet -->
+    <ExportSheet :open="showExportSheet" @close="showExportSheet = false" />
   </div>
 </template>

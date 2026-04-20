@@ -69,6 +69,22 @@
 }
 
 /* ============================================================
+   AMOLED DARK MODE — True black for OLED screens
+   Applied when .amoled class is on <html> (requires .dark too)
+   ============================================================ */
+.dark.amoled {
+  --color-surface: #000000;
+  --color-surface-elevated: #0a0a0f;
+  --color-surface-muted: #1a1a24;
+  --color-border: #2a2a3a;
+
+  --shadow-card: none;
+  --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-fab: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
    TAILWIND THEME EXTENSION
    Maps CSS vars to Tailwind utility classes via @theme
    ============================================================ */

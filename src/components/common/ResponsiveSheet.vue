@@ -140,7 +140,7 @@ function onTouchEnd(e: TouchEvent) {
 .backdrop-leave-active { transition: opacity 0.15s ease; }
 .backdrop-enter-from, .backdrop-leave-to { opacity: 0; }
 
-.sheet-enter-active { transition: transform 0.25s ease; }
+.sheet-enter-active { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .sheet-leave-active { transition: transform 0.2s ease; }
 .sheet-enter-from, .sheet-leave-to { transform: translateY(100%); }
 
@@ -149,7 +149,7 @@ function onTouchEnd(e: TouchEvent) {
 .modal-backdrop-leave-active { transition: opacity 0.15s ease-in; }
 .modal-backdrop-enter-from, .modal-backdrop-leave-to { opacity: 0; }
 
-.modal-panel-enter-active { transition: opacity 0.2s ease-out, transform 0.2s ease-out; }
+.modal-panel-enter-active { transition: opacity 0.2s ease-out, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .modal-panel-leave-active { transition: opacity 0.15s ease-in, transform 0.15s ease-in; }
 .modal-panel-enter-from, .modal-panel-leave-to { opacity: 0; transform: scale(0.95); }
 </style>

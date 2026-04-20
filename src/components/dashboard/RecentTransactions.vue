@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowRight } from 'lucide-vue-next'
+import { ArrowRight, RotateCw } from 'lucide-vue-next'
 import type { Transaction, Account, Category } from '@/types'
 import { getCurrencySymbol } from '@/utils/currency'
 
@@ -13,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: [transaction: Transaction]
+  repeat: [transaction: Transaction]
 }>()
 
 const router = useRouter()
@@ -114,14 +115,14 @@ const hasTransactions = computed(() => props.transactions.length > 0)
     </div>
 
     <!-- Card -->
-    <div class="mx-4 divide-y divide-border rounded-xl bg-surface shadow-card">
+    <div class="mx-4 divide-y divide-border rounded-xl border border-border bg-surface shadow-card">
       <!-- Transaction rows -->
       <template v-if="hasTransactions">
         <button
           v-for="tx in transactions"
           :key="tx.id"
           type="button"
-          class="flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:scale-[0.98]"
+          class="group flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-surface-muted active:scale-[0.98]"
           :data-testid="`transaction-item-${tx.id}`"
           @click="emit('edit', tx)"
         >
@@ -146,10 +147,21 @@ const hasTransactions = computed(() => props.transactions.length > 0)
             </p>
             <p class="text-caption text-text-secondary">{{ formatDate(tx.date) }}</p>
           </div>
-          <!-- Amount -->
-          <span class="text-body shrink-0 font-medium tabular-nums" :class="amountClass(tx)">
-            {{ formatAmount(tx) }}
-          </span>
+          <!-- Amount + Repeat -->
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              class="rounded-md p-1 text-text-muted opacity-0 transition-all duration-150 hover:bg-surface-muted hover:text-primary group-hover:opacity-100"
+              :aria-label="`Repeat ${displayTitle(tx)} transaction`"
+              :data-testid="`repeat-btn-${tx.id}`"
+              @click.stop="emit('repeat', tx)"
+            >
+              <RotateCw :size="14" />
+            </button>
+            <span class="text-card-title font-semibold tabular-nums" :class="amountClass(tx)">
+              {{ formatAmount(tx) }}
+            </span>
+          </div>
         </button>
       </template>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { CalendarDays } from 'lucide-vue-next'
+import { CalendarDays, Download } from 'lucide-vue-next'
 import type { MonthlySummary } from '@/types'
 import type { MonthlySortOption } from '@/graphql/queries/history'
 import { fetchMonthlySummaries } from '@/graphql/queries/history'
@@ -10,6 +10,7 @@ import MonthSummarySkeletonRow from '@/components/history/MonthSummarySkeletonRo
 import SortControls from '@/components/history/SortControls.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import PageTip from '@/components/common/PageTip.vue'
+import ExportSheet from '@/components/export/ExportSheet.vue'
 
 const authStore = useAuthStore()
 
@@ -21,6 +22,7 @@ const hasMore = ref(false)
 const error = ref<string | null>(null)
 const sort = ref<MonthlySortOption>('CHRONOLOGICAL_DESC')
 const offset = ref(0)
+const showExportSheet = ref(false)
 
 async function load(reset = false) {
   if (reset) {
@@ -101,8 +103,17 @@ onUnmounted(() => {
   <div class="min-h-screen pb-24 md:pb-0">
     <div class="mx-auto max-w-md md:max-w-4xl px-4">
     <!-- Header -->
-    <div class="pt-6 pb-2">
+    <div class="flex items-center pt-6 pb-2">
       <h1 class="text-page-title font-bold text-text-primary">History</h1>
+      <button
+        type="button"
+        class="ml-auto rounded-lg p-2 text-text-secondary transition-colors hover:bg-surface-muted hover:text-primary"
+        aria-label="Export transactions"
+        data-testid="export-trigger"
+        @click="showExportSheet = true"
+      >
+        <Download :size="20" />
+      </button>
     </div>
 
     <!-- Page tip (new users only, dismissible) -->
@@ -164,5 +175,8 @@ onUnmounted(() => {
     <!-- Infinite scroll sentinel -->
     <div ref="sentinel" class="h-1" aria-hidden="true" data-testid="scroll-sentinel" />
     </div>
+
+    <!-- Export Sheet -->
+    <ExportSheet :open="showExportSheet" @close="showExportSheet = false" />
   </div>
 </template>

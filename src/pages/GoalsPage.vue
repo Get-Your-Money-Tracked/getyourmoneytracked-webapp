@@ -10,6 +10,7 @@ import GoalCard from '@/components/goals/GoalCard.vue'
 import AddGoalSheet from '@/components/goals/AddGoalSheet.vue'
 import EditGoalSheet from '@/components/goals/EditGoalSheet.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useFabAction } from '@/composables/useFabAction'
 
 const router = useRouter()
 const goalsStore = useGoalsStore()
@@ -27,6 +28,8 @@ onMounted(async () => {
 function openAdd() {
   showAddSheet.value = true
 }
+
+useFabAction({ label: 'Add goal', handler: openAdd })
 
 function onCreated() {
   toastStore.show('Goal added', 'success')

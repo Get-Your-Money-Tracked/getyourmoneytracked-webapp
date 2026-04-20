@@ -71,7 +71,7 @@ const noIncome = computed(() => props.totalIncome === 0)
   <div>
     <!-- Hero Card -->
     <div
-      class="mx-4 rounded-2xl bg-surface p-6 text-center shadow-card"
+      class="hero-card mx-4 rounded-2xl border border-primary/10 p-6 text-center shadow-card"
       data-testid="hero-section"
     >
       <!-- Loading skeleton -->
@@ -161,3 +161,9 @@ const noIncome = computed(() => props.totalIncome === 0)
     </div>
   </div>
 </template>
+
+<style scoped>
+.hero-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 6%, var(--color-surface)), var(--color-surface));
+}
+</style>

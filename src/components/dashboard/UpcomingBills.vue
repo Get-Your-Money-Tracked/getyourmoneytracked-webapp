@@ -19,7 +19,7 @@ const hasBills = computed(() => props.bills.length > 0)
     </div>
 
     <!-- Card -->
-    <div class="mx-4 divide-y divide-border rounded-xl bg-surface shadow-card">
+    <div class="mx-4 divide-y divide-border rounded-xl border border-border bg-surface shadow-card">
       <UpcomingBillItem
         v-for="bill in bills"
         :key="bill.id"

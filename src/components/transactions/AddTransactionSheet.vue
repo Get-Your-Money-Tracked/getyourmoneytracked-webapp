@@ -16,12 +16,15 @@ import DateSelector from '@/components/common/DateSelector.vue'
 import CategoryPicker from '@/components/common/CategoryPicker.vue'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 import TagInput from '@/components/common/TagInput.vue'
-import type { TransactionType } from '@/types'
+import type { Transaction, TransactionType } from '@/types'
+import { suggestCategory, learnCategoryMapping } from '@/composables/useCategorySuggestion'
 
 const props = defineProps<{
   open: boolean
   /** Pre-set transaction type when the sheet opens */
   defaultType?: TransactionType
+  /** Pre-fill from an existing transaction (repeat) */
+  prefill?: Transaction | null
 }>()
 
 const emit = defineEmits<{
@@ -123,27 +126,51 @@ watch(transactionType, (newType) => {
   }
 })
 
+// ── Smart category suggestion ─────────────────────────────────
+const categoryManuallySet = ref(false)
+const suggestedCategoryId = ref<string | null>(null)
+
+watch(description, (desc) => {
+  if (categoryManuallySet.value || transactionType.value === 'TRANSFER') return
+  const suggestion = suggestCategory(desc)
+  if (suggestion) {
+    suggestedCategoryId.value = suggestion
+    categoryId.value = suggestion
+  }
+})
+
+watch(categoryId, (newVal, oldVal) => {
+  // If user manually changed category (not from suggestion), mark as manual
+  if (newVal !== suggestedCategoryId.value && oldVal === suggestedCategoryId.value) {
+    categoryManuallySet.value = true
+  }
+})
+
 // ── Reset on open ─────────────────────────────────────────────
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      transactionType.value = props.defaultType ?? 'EXPENSE'
-      amountString.value = '0'
-      // Session memory: restore last-used account/category
-      categoryId.value = transactionsStore.lastUsedCategoryId
+      // If prefilling from existing transaction (repeat)
+      const pf = props.prefill
+      transactionType.value = pf?.type ?? props.defaultType ?? 'EXPENSE'
+      amountString.value = pf ? pf.amount.toString() : '0'
+      categoryId.value = pf?.categoryId ?? transactionsStore.lastUsedCategoryId
       const defaultAcc = accountsStore.defaultAccount
       accountId.value =
+        pf?.accountId ??
         transactionsStore.lastUsedAccountId ??
         (defaultAcc ? defaultAcc.id : activeAccounts.value[0]?.id ?? null)
-      toAccountId.value = null
-      selectedDate.value = todayIso()
-      description.value = ''
-      notes.value = ''
-      tags.value = []
+      toAccountId.value = pf?.toAccountId ?? null
+      selectedDate.value = todayIso() // Always today for repeat
+      description.value = pf?.description ?? ''
+      notes.value = pf?.notes ?? ''
+      tags.value = pf?.tags ? [...pf.tags] : []
       showMoreDetails.value = false
       submitError.value = null
       showDiscardDialog.value = false
+      categoryManuallySet.value = false
+      suggestedCategoryId.value = null
       // Load data if not already loaded
       if (accountsStore.accounts.length === 0) accountsStore.loadAccounts()
       if (categoriesStore.categories.length === 0) categoriesStore.loadCategories()
@@ -207,6 +234,8 @@ async function handleSubmit() {
           ? 'Income'
           : 'Transfer'
     toastStore.show(`${typeLabel} saved`, 'success')
+    // Learn category association for future suggestions
+    learnCategoryMapping(description.value, categoryId.value)
     emit('created')
     emit('close')
   } catch (e: unknown) {
