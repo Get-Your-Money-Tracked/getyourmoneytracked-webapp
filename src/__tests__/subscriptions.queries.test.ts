@@ -42,6 +42,8 @@ const RAW_SUBSCRIPTION = {
   nextDueDate: '2026-04-15',
   isActive: true,
   autoLog: false,
+  pendingAmount: null,
+  pendingEffectiveDate: null,
   category: {
     id: 'cat-1',
     name: 'Entertainment',

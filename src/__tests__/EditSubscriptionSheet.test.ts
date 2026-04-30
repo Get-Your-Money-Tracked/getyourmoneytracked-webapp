@@ -85,6 +85,8 @@ function makeSub(overrides: Partial<SubscriptionEntry> = {}): SubscriptionEntry 
     nextDueDate: '2026-03-25',
     isActive: true,
     autoLog: false,
+    pendingAmount: null,
+    pendingEffectiveDate: null,
     category: defaultCategories[0],
     account: defaultAccounts[0],
     ...overrides,
