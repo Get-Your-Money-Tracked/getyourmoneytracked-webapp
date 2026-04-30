@@ -108,6 +108,8 @@ const DASHBOARD_QUERY = `
         nextDueDate
         isActive
         autoLog
+        pendingAmount
+        pendingEffectiveDate
       }
     }
   }

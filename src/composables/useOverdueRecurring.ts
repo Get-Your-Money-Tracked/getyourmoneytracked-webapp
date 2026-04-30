@@ -189,7 +189,25 @@ export function useOverdueRecurring(subscriptions: () => SubscriptionEntry[]) {
           subscription.frequency,
           subscription.dayOfMonth,
         )
-        await callUpdateSubscription(subscription.id, { nextDueDate: nextDate })
+
+        // 3. Check if pending amount should be applied
+        const updatePayload: Record<string, unknown> = { nextDueDate: nextDate }
+        if (
+          subscription.pendingAmount != null &&
+          subscription.pendingEffectiveDate != null
+        ) {
+          const effectiveDate = new Date(subscription.pendingEffectiveDate)
+          effectiveDate.setHours(0, 0, 0, 0)
+          const nextDueObj = new Date(nextDate)
+          nextDueObj.setHours(0, 0, 0, 0)
+          if (nextDueObj >= effectiveDate) {
+            // Swap pending amount into the main amount and clear pending fields
+            updatePayload.amount = subscription.pendingAmount
+            updatePayload.clearPendingAmount = true
+          }
+        }
+
+        await callUpdateSubscription(subscription.id, updatePayload as any)
       }),
     )
   }

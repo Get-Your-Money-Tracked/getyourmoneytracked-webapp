@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-vue-next'
 import type { SubscriptionEntry, Category, Account } from '@/types'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToastStore } from '@/stores/toast'
+import { formatCurrency } from '@/utils/currency'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
@@ -34,6 +35,7 @@ const dayOfMonthInput = ref<string>('1')
 const isActiveInput = ref<boolean>(true)
 const autoLogInput = ref<boolean>(false)
 const includeCurrentMonthInput = ref<boolean>(false)
+const applyNextMonth = ref<boolean>(false)
 
 const isUpdating = ref(false)
 const isDeleting = ref(false)
@@ -55,6 +57,25 @@ const parsedDayOfMonth = computed(() => {
 })
 
 const showDayOfMonth = computed(() => frequencyInput.value === 'MONTHLY')
+
+/** True when the user has changed the amount from the current value */
+const amountChanged = computed(() => {
+  if (!props.subscription) return false
+  return parsedAmount.value !== props.subscription.amount && parsedAmount.value > 0
+})
+
+/** True when the subscription already has a pending amount change */
+const hasPendingAmount = computed(() => {
+  return props.subscription?.pendingAmount != null
+})
+
+/** Format the pending effective date for display */
+const pendingDateDisplay = computed(() => {
+  if (!props.subscription?.pendingEffectiveDate) return ''
+  const [y, m, d] = props.subscription.pendingEffectiveDate.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+})
 
 const nextDueInFutureMonth = computed(() => {
   if (!showDayOfMonth.value || !props.subscription?.nextDueDate) return false
@@ -91,6 +112,7 @@ watch(
       isActiveInput.value = s.isActive
       autoLogInput.value = s.autoLog
       includeCurrentMonthInput.value = false
+      applyNextMonth.value = false
       isUpdating.value = false
       isDeleting.value = false
       updateError.value = null
@@ -142,6 +164,14 @@ function validateDayOfMonth(): boolean {
 }
 
 // ── Update ────────────────────────────────────────────────────
+function getFirstOfNextMonth(): string {
+  const now = new Date()
+  const y = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()
+  const m = now.getMonth() === 11 ? 0 : now.getMonth() + 1
+  const d = new Date(y, m, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
 async function handleUpdate() {
   const validName = validateName()
   const validAmount = validateAmount()
@@ -151,9 +181,8 @@ async function handleUpdate() {
   isUpdating.value = true
   updateError.value = null
   try {
-    await subscriptionsStore.updateSubscription(props.subscription.id, {
+    const updatePayload: Record<string, unknown> = {
       name: nameInput.value.trim(),
-      amount: parsedAmount.value,
       categoryId: selectedCategoryId.value,
       accountId: selectedAccountId.value,
       frequency: frequencyInput.value,
@@ -161,11 +190,39 @@ async function handleUpdate() {
       isActive: isActiveInput.value,
       autoLog: autoLogInput.value,
       includeCurrentMonth: includeCurrentMonthInput.value || undefined,
-    })
+    }
+
+    if (amountChanged.value && applyNextMonth.value) {
+      // Deferred: set pending amount for 1st of next month, keep current amount
+      updatePayload.pendingAmount = parsedAmount.value
+      updatePayload.pendingEffectiveDate = getFirstOfNextMonth()
+    } else {
+      // Immediate amount change (or no change)
+      updatePayload.amount = parsedAmount.value
+    }
+
+    await subscriptionsStore.updateSubscription(props.subscription.id, updatePayload as any)
     emit('saved')
     emit('close')
   } catch (e: unknown) {
     updateError.value = (e as Error).message ?? 'Failed to update subscription.'
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+async function clearPendingAmount() {
+  if (!props.subscription) return
+  isUpdating.value = true
+  updateError.value = null
+  try {
+    await subscriptionsStore.updateSubscription(props.subscription.id, {
+      clearPendingAmount: true,
+    })
+    emit('saved')
+    emit('close')
+  } catch (e: unknown) {
+    updateError.value = (e as Error).message ?? 'Failed to clear pending amount.'
   } finally {
     isUpdating.value = false
   }
@@ -340,6 +397,48 @@ async function confirmDelete() {
         <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
           {{ amountError }}
         </p>
+
+        <!-- Apply from next month toggle (when amount changed) -->
+        <div
+          v-if="amountChanged && !hasPendingAmount"
+          class="mt-2 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
+          data-testid="apply-next-month-section"
+        >
+          <div>
+            <p class="text-body text-text-primary">Apply from next month</p>
+            <p class="text-caption text-text-secondary">New amount takes effect on the 1st</p>
+          </div>
+          <input
+            v-model="applyNextMonth"
+            type="checkbox"
+            class="h-5 w-5 rounded accent-primary"
+            data-testid="apply-next-month-toggle"
+          />
+        </div>
+
+        <!-- Existing pending amount info -->
+        <div
+          v-if="hasPendingAmount"
+          class="mt-2 rounded-xl border px-4 py-3"
+          :style="{ borderColor: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }"
+          data-testid="pending-amount-info"
+        >
+          <p class="text-body text-text-primary">
+            Pending: {{ formatCurrency(subscription!.pendingAmount!, currency) }}
+          </p>
+          <p class="text-caption text-text-secondary">
+            Takes effect {{ pendingDateDisplay }}
+          </p>
+          <button
+            type="button"
+            class="text-caption mt-1 font-medium transition-colors"
+            :style="{ color: 'var(--color-danger)' }"
+            data-testid="cancel-pending-btn"
+            @click="clearPendingAmount"
+          >
+            Cancel pending change
+          </button>
+        </div>
       </div>
 
       <!-- Category picker -->

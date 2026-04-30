@@ -61,6 +61,17 @@ const isIncome = computed(() => props.subscription.type === 'INCOME')
 const amountColorClass = computed(() => isIncome.value ? 'text-primary' : 'text-danger')
 const amountPrefix = computed(() => isIncome.value ? '+' : '-')
 
+// ── Pending amount display ────────────────────────────────────
+const hasPending = computed(() => props.subscription.pendingAmount != null)
+const pendingLabel = computed(() => {
+  if (!hasPending.value) return ''
+  const amt = formatCurrency(props.subscription.pendingAmount!, props.currency)
+  if (!props.subscription.pendingEffectiveDate) return `-> ${amt}`
+  const [, m] = props.subscription.pendingEffectiveDate.split('-').map(Number)
+  const monthName = new Date(2000, m - 1, 1).toLocaleDateString(undefined, { month: 'short' })
+  return `-> ${amt} from ${monthName}`
+})
+
 // ── Category color ────────────────────────────────────────────
 const categoryColor = computed(() => props.subscription.category?.color ?? '#10b981')
 </script>
@@ -92,6 +103,9 @@ const categoryColor = computed(() => props.subscription.category?.color ?? '#10b
         </span>
         <span class="ml-2 shrink-0 text-body font-medium tabular-nums" :class="amountColorClass">
           {{ amountPrefix }}{{ formattedAmount }}<span class="text-caption text-text-muted">{{ frequencyLabel }}</span>
+          <span v-if="hasPending" class="ml-1 text-caption font-normal text-primary" :data-testid="`pending-badge-${subscription.id}`">
+            {{ pendingLabel }}
+          </span>
         </span>
       </div>
 

@@ -120,6 +120,8 @@ const MONTH_DETAIL_QUERY = `
         nextDueDate
         isActive
         autoLog
+        pendingAmount
+        pendingEffectiveDate
         category {
           id
           name

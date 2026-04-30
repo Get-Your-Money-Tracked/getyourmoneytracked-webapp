@@ -102,6 +102,8 @@ export interface SubscriptionEntry {
   nextDueDate: string | null
   isActive: boolean
   autoLog: boolean
+  pendingAmount: number | null
+  pendingEffectiveDate: string | null
 }
 
 export interface MonthlySummary {

@@ -10,6 +10,7 @@ function parseSubscriptionMoney(raw: Record<string, unknown>): SubscriptionEntry
   return {
     ...raw,
     amount: parseMoney(raw.amount),
+    pendingAmount: raw.pendingAmount != null ? parseMoney(raw.pendingAmount) : null,
     account: account
       ? { ...account, balance: parseMoney(account.balance) }
       : account,
@@ -30,6 +31,8 @@ const SUBSCRIPTIONS_QUERY = `
       nextDueDate
       isActive
       autoLog
+      pendingAmount
+      pendingEffectiveDate
       category {
         id
         name
@@ -67,6 +70,8 @@ const CREATE_SUBSCRIPTION_MUTATION = `
       nextDueDate
       isActive
       autoLog
+      pendingAmount
+      pendingEffectiveDate
       category {
         id
         name
@@ -102,6 +107,8 @@ const UPDATE_SUBSCRIPTION_MUTATION = `
       nextDueDate
       isActive
       autoLog
+      pendingAmount
+      pendingEffectiveDate
       category {
         id
         name
@@ -161,6 +168,12 @@ export interface UpdateSubscriptionInput {
   autoLog?: boolean
   /** When true, forces nextDueDate into the current month even if dayOfMonth has passed. */
   includeCurrentMonth?: boolean
+  /** Deferred amount change — will replace amount on the effective date. */
+  pendingAmount?: number
+  /** Date when pendingAmount takes effect (YYYY-MM-DD). */
+  pendingEffectiveDate?: string
+  /** When true, clears any existing pending amount change. */
+  clearPendingAmount?: boolean
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────
@@ -193,6 +206,7 @@ export async function callUpdateSubscription(
   const gqlInput = {
     ...input,
     amount: input.amount != null ? toMoney(input.amount) : undefined,
+    pendingAmount: input.pendingAmount != null ? toMoney(input.pendingAmount) : undefined,
   }
   const result = await urqlClient
     .mutation(UPDATE_SUBSCRIPTION_MUTATION, { id, input: gqlInput })
