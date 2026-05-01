@@ -98,7 +98,7 @@ function clampDay(year: number, month: number, day: number): Date {
 
 function calcNextMonthly(dayOfMonth: number, today: Date): Date {
   const candidate = clampDay(today.getFullYear(), today.getMonth(), dayOfMonth)
-  if (candidate < today) {
+  if (candidate <= today) {
     let y = today.getFullYear()
     let m = today.getMonth() + 1
     if (m > 11) {
@@ -114,7 +114,7 @@ function calcNextYearly(anchor: Date, today: Date): Date {
   const month = anchor.getUTCMonth()
   const day = anchor.getUTCDate()
   const candidate = clampDay(today.getFullYear(), month, day)
-  if (candidate < today) {
+  if (candidate <= today) {
     return clampDay(today.getFullYear() + 1, month, day)
   }
   return candidate
@@ -142,7 +142,7 @@ export function useOverdueRecurring(subscriptions: () => SubscriptionEntry[]) {
         if (!s.nextDueDate) return false
         const due = new Date(s.nextDueDate)
         due.setHours(0, 0, 0, 0)
-        return due < today
+        return due <= today
       })
       .map((s) => {
         const due = new Date(s.nextDueDate!)
