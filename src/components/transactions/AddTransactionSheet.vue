@@ -171,9 +171,9 @@ watch(
       showDiscardDialog.value = false
       categoryManuallySet.value = false
       suggestedCategoryId.value = null
-      // Load data if not already loaded
-      if (accountsStore.accounts.length === 0) accountsStore.loadAccounts()
-      if (categoriesStore.categories.length === 0) categoriesStore.loadCategories()
+      // Load data if not already loaded (or if previous load failed)
+      if (accountsStore.accounts.length === 0 || accountsStore.error) accountsStore.loadAccounts()
+      if (categoriesStore.categories.length === 0 || categoriesStore.error) categoriesStore.loadCategories()
       // Load available tags for autocomplete
       callUsedTags().then((t) => { availableTags.value = t }).catch((e) => console.error('Failed to load tags:', e))
     }

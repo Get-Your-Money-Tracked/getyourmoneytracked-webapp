@@ -139,8 +139,8 @@ async function loadDashboard(bypassCache = false) {
     // Run all fetches concurrently; partial failures don't block render
     const [dashResult, catResult, accResult, subResult, goalResult] = await Promise.allSettled([
       fetchDashboard(selectedMonth.value, bypassCache),
-      categoriesStore.categories.length === 0 ? categoriesStore.loadCategories() : Promise.resolve(),
-      accountsStore.accounts.length === 0 ? accountsStore.loadAccounts() : Promise.resolve(),
+      categoriesStore.categories.length === 0 || categoriesStore.error ? categoriesStore.loadCategories() : Promise.resolve(),
+      accountsStore.accounts.length === 0 || accountsStore.error ? accountsStore.loadAccounts() : Promise.resolve(),
       subscriptionsStore.subscriptions.length === 0 ? subscriptionsStore.loadSubscriptions() : Promise.resolve(),
       goalsStore.goals.length === 0 ? goalsStore.loadGoals() : Promise.resolve(),
     ])
