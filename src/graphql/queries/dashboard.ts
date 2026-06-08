@@ -70,10 +70,8 @@ const DASHBOARD_QUERY = `
         currency
         categoryId
         accountId
-        frequency
         nextDueDate
         isActive
-        autoLog
       }
       budgetProgress {
         budgetId
@@ -103,13 +101,8 @@ const DASHBOARD_QUERY = `
           type
           currency
         }
-        frequency
-        dayOfMonth
         nextDueDate
         isActive
-        autoLog
-        pendingAmount
-        pendingEffectiveDate
       }
     }
   }

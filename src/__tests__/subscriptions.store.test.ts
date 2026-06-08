@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useSubscriptionsStore, toMonthlyAmount } from '@/stores/subscriptions'
+import { useSubscriptionsStore } from '@/stores/subscriptions'
 import type { SubscriptionEntry } from '@/types'
 
 vi.mock('@/lib/urql', () => ({
@@ -34,13 +34,8 @@ function makeSub(overrides: Partial<SubscriptionEntry> = {}): SubscriptionEntry 
     name: 'Netflix',
     type: 'EXPENSE',
     amount: 15.99,
-    frequency: 'MONTHLY',
-    dayOfMonth: 25,
-    nextDueDate: '2026-03-25',
+    nextDueDate: '2026-07-01',
     isActive: true,
-    autoLog: false,
-    pendingAmount: null,
-    pendingEffectiveDate: null,
     category: {
       id: 'cat-1',
       name: 'Entertainment',
@@ -135,9 +130,9 @@ describe('useSubscriptionsStore', () => {
   // ── monthlyExpenses / monthlyIncome ──────────────────────────
   it('monthlyExpenses sums only active EXPENSE subscriptions', async () => {
     mockFetchSubscriptions.mockResolvedValueOnce([
-      makeSub({ id: 's1', type: 'EXPENSE', amount: 15.99, frequency: 'MONTHLY', isActive: true }),
-      makeSub({ id: 's2', type: 'EXPENSE', amount: 50, frequency: 'MONTHLY', isActive: false }), // inactive — excluded
-      makeSub({ id: 's3', type: 'INCOME', amount: 1000, frequency: 'MONTHLY', isActive: true }), // income — excluded
+      makeSub({ id: 's1', type: 'EXPENSE', amount: 15.99, isActive: true }),
+      makeSub({ id: 's2', type: 'EXPENSE', amount: 50, isActive: false }), // inactive — excluded
+      makeSub({ id: 's3', type: 'INCOME', amount: 1000, isActive: true }), // income — excluded
     ])
     const store = useSubscriptionsStore()
     await store.loadSubscriptions()
@@ -146,30 +141,22 @@ describe('useSubscriptionsStore', () => {
 
   it('monthlyIncome sums only active INCOME subscriptions', async () => {
     mockFetchSubscriptions.mockResolvedValueOnce([
-      makeSub({ id: 's1', type: 'INCOME', amount: 1000, frequency: 'MONTHLY', isActive: true }),
-      makeSub({ id: 's2', type: 'INCOME', amount: 500, frequency: 'MONTHLY', isActive: false }), // inactive
+      makeSub({ id: 's1', type: 'INCOME', amount: 1000, isActive: true }),
+      makeSub({ id: 's2', type: 'INCOME', amount: 500, isActive: false }), // inactive
     ])
     const store = useSubscriptionsStore()
     await store.loadSubscriptions()
     expect(store.monthlyIncome).toBeCloseTo(1000)
   })
 
-  it('monthlyExpenses normalizes weekly to monthly (×4.33)', async () => {
+  it('monthlyExpenses adds multiple active expenses as plain monthly sums', async () => {
     mockFetchSubscriptions.mockResolvedValueOnce([
-      makeSub({ id: 's1', type: 'EXPENSE', amount: 10, frequency: 'WEEKLY', isActive: true }),
+      makeSub({ id: 's1', type: 'EXPENSE', amount: 10, isActive: true }),
+      makeSub({ id: 's2', type: 'EXPENSE', amount: 25.50, isActive: true }),
     ])
     const store = useSubscriptionsStore()
     await store.loadSubscriptions()
-    expect(store.monthlyExpenses).toBeCloseTo(43.3)
-  })
-
-  it('monthlyExpenses normalizes yearly to monthly (÷12)', async () => {
-    mockFetchSubscriptions.mockResolvedValueOnce([
-      makeSub({ id: 's1', type: 'EXPENSE', amount: 120, frequency: 'YEARLY', isActive: true }),
-    ])
-    const store = useSubscriptionsStore()
-    await store.loadSubscriptions()
-    expect(store.monthlyExpenses).toBeCloseTo(10)
+    expect(store.monthlyExpenses).toBeCloseTo(35.50)
   })
 
   // ── createSubscription ───────────────────────────────────────
@@ -183,8 +170,6 @@ describe('useSubscriptionsStore', () => {
       amount: 15.99,
       categoryId: 'cat-1',
       accountId: 'acc-1',
-      frequency: 'MONTHLY',
-      dayOfMonth: 25,
     })
     expect(store.subscriptions).toContainEqual(newSub)
   })
@@ -199,7 +184,6 @@ describe('useSubscriptionsStore', () => {
         amount: 15.99,
         categoryId: 'cat-1',
         accountId: 'acc-1',
-        frequency: 'MONTHLY',
       }),
     ).rejects.toThrow('Server error')
   })
@@ -233,24 +217,5 @@ describe('useSubscriptionsStore', () => {
     expect(store.error).toBe('Fail')
     store.clearError()
     expect(store.error).toBeNull()
-  })
-})
-
-// ── toMonthlyAmount ────────────────────────────────────────────
-describe('toMonthlyAmount', () => {
-  it('MONTHLY returns amount as-is', () => {
-    expect(toMonthlyAmount(100, 'MONTHLY')).toBe(100)
-  })
-
-  it('WEEKLY multiplies by 4.33', () => {
-    expect(toMonthlyAmount(10, 'WEEKLY')).toBeCloseTo(43.3)
-  })
-
-  it('YEARLY divides by 12', () => {
-    expect(toMonthlyAmount(120, 'YEARLY')).toBeCloseTo(10)
-  })
-
-  it('DAILY multiplies by 30.44', () => {
-    expect(toMonthlyAmount(1, 'DAILY')).toBeCloseTo(30.44)
   })
 })

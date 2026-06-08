@@ -13,27 +13,6 @@ const emit = defineEmits<{
   edit: [subscription: SubscriptionEntry]
 }>()
 
-// ── Frequency label ───────────────────────────────────────────
-const frequencyLabel = computed(() => {
-  switch (props.subscription.frequency) {
-    case 'DAILY': return '/day'
-    case 'WEEKLY': return '/wk'
-    case 'MONTHLY': return '/mo'
-    case 'YEARLY': return '/yr'
-    default: return '/mo'
-  }
-})
-
-const frequencyFullLabel = computed(() => {
-  switch (props.subscription.frequency) {
-    case 'DAILY': return 'Daily'
-    case 'WEEKLY': return 'Weekly'
-    case 'MONTHLY': return 'Monthly'
-    case 'YEARLY': return 'Yearly'
-    default: return 'Monthly'
-  }
-})
-
 // ── Due date display ──────────────────────────────────────────
 const dueDateDisplay = computed(() => {
   if (!props.subscription.isActive) return 'Paused'
@@ -60,17 +39,6 @@ const formattedAmount = computed(() =>
 const isIncome = computed(() => props.subscription.type === 'INCOME')
 const amountColorClass = computed(() => isIncome.value ? 'text-primary' : 'text-danger')
 const amountPrefix = computed(() => isIncome.value ? '+' : '-')
-
-// ── Pending amount display ────────────────────────────────────
-const hasPending = computed(() => props.subscription.pendingAmount != null)
-const pendingLabel = computed(() => {
-  if (!hasPending.value) return ''
-  const amt = formatCurrency(props.subscription.pendingAmount!, props.currency)
-  if (!props.subscription.pendingEffectiveDate) return `-> ${amt}`
-  const [, m] = props.subscription.pendingEffectiveDate.split('-').map(Number)
-  const monthName = new Date(2000, m - 1, 1).toLocaleDateString(undefined, { month: 'short' })
-  return `-> ${amt} from ${monthName}`
-})
 
 // ── Category color ────────────────────────────────────────────
 const categoryColor = computed(() => props.subscription.category?.color ?? '#10b981')
@@ -102,17 +70,14 @@ const categoryColor = computed(() => props.subscription.category?.color ?? '#10b
           {{ subscription.name }}
         </span>
         <span class="ml-2 shrink-0 text-body font-medium tabular-nums" :class="amountColorClass">
-          {{ amountPrefix }}{{ formattedAmount }}<span class="text-caption text-text-muted">{{ frequencyLabel }}</span>
-          <span v-if="hasPending" class="ml-1 text-caption font-normal text-primary" :data-testid="`pending-badge-${subscription.id}`">
-            {{ pendingLabel }}
-          </span>
+          {{ amountPrefix }}{{ formattedAmount }}<span class="text-caption text-text-muted">/mo</span>
         </span>
       </div>
 
       <!-- Row 2: Category + Due date + Status -->
       <div class="mt-0.5 flex items-center justify-between">
         <span class="text-caption text-text-secondary">
-          {{ subscription.category?.name ?? '—' }} · {{ frequencyFullLabel }}
+          {{ subscription.category?.name ?? '—' }} · Monthly
         </span>
 
         <div class="ml-2 flex shrink-0 items-center gap-2">

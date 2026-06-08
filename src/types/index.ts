@@ -5,7 +5,6 @@
 export type TransactionType = 'EXPENSE' | 'INCOME' | 'TRANSFER'
 export type AccountType = 'CASH' | 'BANK' | 'CREDIT_CARD'
 export type BudgetStatus = 'ON_TRACK' | 'WARNING' | 'EXCEEDED'
-export type Frequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
 
 export interface User {
   id: string
@@ -83,11 +82,8 @@ export interface UpcomingBill {
   currency: string
   categoryId: string | null
   accountId: string
-  frequency: Frequency
   nextDueDate: string | null
   isActive: boolean
-  /** When true, this item will prompt for logging when overdue */
-  autoLog: boolean
 }
 
 export interface SubscriptionEntry {
@@ -97,13 +93,8 @@ export interface SubscriptionEntry {
   amount: number
   category: Category | null
   account: Account
-  frequency: Frequency
-  dayOfMonth: number | null
   nextDueDate: string | null
   isActive: boolean
-  autoLog: boolean
-  pendingAmount: number | null
-  pendingEffectiveDate: string | null
 }
 
 export interface MonthlySummary {

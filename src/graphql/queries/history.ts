@@ -115,13 +115,8 @@ const MONTH_DETAIL_QUERY = `
         name
         type
         amount
-        frequency
-        dayOfMonth
         nextDueDate
         isActive
-        autoLog
-        pendingAmount
-        pendingEffectiveDate
         category {
           id
           name

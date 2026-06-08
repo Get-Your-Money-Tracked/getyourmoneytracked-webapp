@@ -80,13 +80,8 @@ function makeSub(overrides: Partial<SubscriptionEntry> = {}): SubscriptionEntry 
     name: 'Netflix',
     type: 'EXPENSE',
     amount: 15.99,
-    frequency: 'MONTHLY',
-    dayOfMonth: 25,
-    nextDueDate: '2026-03-25',
+    nextDueDate: '2026-07-01',
     isActive: true,
-    autoLog: false,
-    pendingAmount: null,
-    pendingEffectiveDate: null,
     category: defaultCategories[0],
     account: defaultAccounts[0],
     ...overrides,
@@ -172,24 +167,39 @@ describe('EditSubscriptionSheet', () => {
     expect(inactiveBtn.attributes('style') ?? '').toContain('background-color')
   })
 
-  // ── Day-of-month visibility ───────────────────────────────────
-  it('shows day-of-month section when frequency is MONTHLY', async () => {
-    const wrapper = mountSheet(makeSub({ frequency: 'MONTHLY' }))
-    await flushPromises()
-    expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(true)
-  })
-
-  it('hides day-of-month section when frequency is WEEKLY', async () => {
-    const wrapper = mountSheet(makeSub({ frequency: 'WEEKLY', dayOfMonth: null }))
-    await flushPromises()
-    expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(false)
-  })
-
-  it('hides day-of-month section when user switches to Weekly', async () => {
+  // ── Removed UI ────────────────────────────────────────────────
+  it('does not render any frequency toggle (monthly-only)', async () => {
     const wrapper = mountSheet()
     await flushPromises()
-    await wrapper.find('[data-testid="freq-weekly-btn"]').trigger('click')
+    expect(wrapper.find('[data-testid="freq-monthly-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="freq-weekly-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="freq-yearly-btn"]').exists()).toBe(false)
+  })
+
+  it('does not render day-of-month input (always 1st)', async () => {
+    const wrapper = mountSheet()
+    await flushPromises()
     expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="day-of-month-input"]').exists()).toBe(false)
+  })
+
+  it('does not render apply-next-month toggle', async () => {
+    const wrapper = mountSheet()
+    await flushPromises()
+    await wrapper.find('[data-testid="edit-amount-input"]').setValue('25.00')
+    expect(wrapper.find('[data-testid="apply-next-month-section"]').exists()).toBe(false)
+  })
+
+  it('does not render include-current-month toggle', async () => {
+    const wrapper = mountSheet()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="include-current-month-section"]').exists()).toBe(false)
+  })
+
+  it('does not render pending-amount info', async () => {
+    const wrapper = mountSheet()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="pending-amount-info"]').exists()).toBe(false)
   })
 
   // ── Validation ────────────────────────────────────────────────
@@ -211,16 +221,6 @@ describe('EditSubscriptionSheet', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="amount-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Amount must be greater than 0.')
-  })
-
-  it('shows day-of-month error for invalid day', async () => {
-    const wrapper = mountSheet()
-    await flushPromises()
-    await wrapper.find('[data-testid="day-of-month-input"]').setValue('99')
-    await wrapper.find('[data-testid="day-of-month-input"]').trigger('blur')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="day-of-month-error"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Day must be between 1 and 31.')
   })
 
   // ── Update button state ───────────────────────────────────────
@@ -255,10 +255,30 @@ describe('EditSubscriptionSheet', () => {
     await wrapper.find('[data-testid="edit-amount-input"]').setValue('19.99')
     await wrapper.find('[data-testid="update-btn"]').trigger('click')
     await flushPromises()
-    expect(_mockUpdateSubscription).toHaveBeenCalledWith(
-      'sub-1',
-      expect.objectContaining({ amount: 19.99, name: 'Netflix' }),
-    )
+    expect(_mockUpdateSubscription).toHaveBeenCalledWith('sub-1', {
+      name: 'Netflix',
+      amount: 19.99,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      isActive: true,
+    })
+  })
+
+  it('does not send any frequency, dayOfMonth, autoLog, pendingAmount fields', async () => {
+    _mockUpdateSubscription.mockResolvedValueOnce(makeSub())
+    const wrapper = mountSheet()
+    await flushPromises()
+    await wrapper.find('[data-testid="update-btn"]').trigger('click')
+    await flushPromises()
+    const payload = _mockUpdateSubscription.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('frequency')
+    expect(payload).not.toHaveProperty('dayOfMonth')
+    expect(payload).not.toHaveProperty('autoLog')
+    expect(payload).not.toHaveProperty('pendingAmount')
+    expect(payload).not.toHaveProperty('pendingEffectiveDate')
+    expect(payload).not.toHaveProperty('clearPendingAmount')
+    expect(payload).not.toHaveProperty('includeCurrentMonth')
+    expect(payload).not.toHaveProperty('nextDueDate')
   })
 
   it('emits saved and close after successful update', async () => {
@@ -302,9 +322,6 @@ describe('EditSubscriptionSheet', () => {
       expect.objectContaining({ isActive: false }),
     )
   })
-
-  // ── autoLog toggle ────────────────────────────────────────────
-  // Auto-log toggle removed in v1.1 — all subscriptions auto-log when overdue.
 
   // ── Delete flow ───────────────────────────────────────────────
   it('renders Delete Subscription button', () => {

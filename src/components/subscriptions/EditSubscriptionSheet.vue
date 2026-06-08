@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-vue-next'
 import type { SubscriptionEntry, Category, Account } from '@/types'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToastStore } from '@/stores/toast'
-import { formatCurrency } from '@/utils/currency'
+import { getCurrencySymbol } from '@/utils/currency'
 import ResponsiveSheet from '@/components/common/ResponsiveSheet.vue'
 
 const props = defineProps<{
@@ -24,24 +24,22 @@ const emit = defineEmits<{
 const subscriptionsStore = useSubscriptionsStore()
 const toastStore = useToastStore()
 
+// ── Currency symbol ───────────────────────────────────────────
+const currencySymbol = computed(() => getCurrencySymbol(props.currency))
+
 // ── Form state ────────────────────────────────────────────────
 const nameInput = ref<string>('')
 const typeInput = ref<'EXPENSE' | 'INCOME'>('EXPENSE')
 const amountInput = ref<string>('')
 const selectedCategoryId = ref<string>('')
 const selectedAccountId = ref<string>('')
-const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
-const dayOfMonthInput = ref<string>('1')
 const isActiveInput = ref<boolean>(true)
-const includeCurrentMonthInput = ref<boolean>(false)
-const applyNextMonth = ref<boolean>(false)
 
 const isUpdating = ref(false)
 const isDeleting = ref(false)
 const updateError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
 const nameError = ref<string | null>(null)
-const dayOfMonthError = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 
 // ── Computed ──────────────────────────────────────────────────
@@ -50,48 +48,11 @@ const parsedAmount = computed(() => {
   return isNaN(v) ? 0 : v
 })
 
-const parsedDayOfMonth = computed(() => {
-  const v = parseInt(dayOfMonthInput.value)
-  return isNaN(v) ? 1 : v
-})
-
-const showDayOfMonth = computed(() => frequencyInput.value === 'MONTHLY')
-
-/** True when the user has changed the amount from the current value */
-const amountChanged = computed(() => {
-  if (!props.subscription) return false
-  return parsedAmount.value !== props.subscription.amount && parsedAmount.value > 0
-})
-
-/** True when the subscription already has a pending amount change */
-const hasPendingAmount = computed(() => {
-  return props.subscription?.pendingAmount != null
-})
-
-/** Format the pending effective date for display */
-const pendingDateDisplay = computed(() => {
-  if (!props.subscription?.pendingEffectiveDate) return ''
-  const [y, m, d] = props.subscription.pendingEffectiveDate.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-})
-
-const nextDueInFutureMonth = computed(() => {
-  if (!showDayOfMonth.value || !props.subscription?.nextDueDate) return false
-  const today = new Date()
-  const nextDue = new Date(props.subscription.nextDueDate)
-  return nextDue.getMonth() !== today.getMonth() || nextDue.getFullYear() !== today.getFullYear()
-})
-
 const isFormValid = computed(() => {
   if (!nameInput.value.trim()) return false
   if (parsedAmount.value <= 0) return false
   if (!selectedCategoryId.value) return false
   if (!selectedAccountId.value) return false
-  if (showDayOfMonth.value) {
-    const d = parsedDayOfMonth.value
-    if (d < 1 || d > 31) return false
-  }
   return true
 })
 
@@ -106,17 +67,12 @@ watch(
       amountInput.value = s.amount.toFixed(2)
       selectedCategoryId.value = s.category?.id ?? ''
       selectedAccountId.value = s.account.id
-      frequencyInput.value = s.frequency
-      dayOfMonthInput.value = s.dayOfMonth?.toString() ?? '1'
       isActiveInput.value = s.isActive
-      includeCurrentMonthInput.value = false
-      applyNextMonth.value = false
       isUpdating.value = false
       isDeleting.value = false
       updateError.value = null
       amountError.value = null
       nameError.value = null
-      dayOfMonthError.value = null
       showDeleteConfirm.value = false
     }
   },
@@ -147,79 +103,26 @@ function validateAmount(): boolean {
   return true
 }
 
-function validateDayOfMonth(): boolean {
-  if (!showDayOfMonth.value) {
-    dayOfMonthError.value = null
-    return true
-  }
-  const d = parsedDayOfMonth.value
-  if (d < 1 || d > 31) {
-    dayOfMonthError.value = 'Day must be between 1 and 31.'
-    return false
-  }
-  dayOfMonthError.value = null
-  return true
-}
-
 // ── Update ────────────────────────────────────────────────────
-function getFirstOfNextMonth(): string {
-  const now = new Date()
-  const y = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()
-  const m = now.getMonth() === 11 ? 0 : now.getMonth() + 1
-  const d = new Date(y, m, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
-
 async function handleUpdate() {
   const validName = validateName()
   const validAmount = validateAmount()
-  const validDay = validateDayOfMonth()
-  if (!validName || !validAmount || !validDay || !props.subscription) return
+  if (!validName || !validAmount || !props.subscription) return
 
-  isUpdating.value = true
-  updateError.value = null
-  try {
-    const updatePayload: Record<string, unknown> = {
-      name: nameInput.value.trim(),
-      categoryId: selectedCategoryId.value,
-      accountId: selectedAccountId.value,
-      frequency: frequencyInput.value,
-      dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
-      isActive: isActiveInput.value,
-      includeCurrentMonth: includeCurrentMonthInput.value || undefined,
-    }
-
-    if (amountChanged.value && applyNextMonth.value) {
-      // Deferred: set pending amount for 1st of next month, keep current amount
-      updatePayload.pendingAmount = parsedAmount.value
-      updatePayload.pendingEffectiveDate = getFirstOfNextMonth()
-    } else {
-      // Immediate amount change (or no change)
-      updatePayload.amount = parsedAmount.value
-    }
-
-    await subscriptionsStore.updateSubscription(props.subscription.id, updatePayload as any)
-    emit('saved')
-    emit('close')
-  } catch (e: unknown) {
-    updateError.value = (e as Error).message ?? 'Failed to update subscription.'
-  } finally {
-    isUpdating.value = false
-  }
-}
-
-async function clearPendingAmount() {
-  if (!props.subscription) return
   isUpdating.value = true
   updateError.value = null
   try {
     await subscriptionsStore.updateSubscription(props.subscription.id, {
-      clearPendingAmount: true,
+      name: nameInput.value.trim(),
+      amount: parsedAmount.value,
+      categoryId: selectedCategoryId.value,
+      accountId: selectedAccountId.value,
+      isActive: isActiveInput.value,
     })
     emit('saved')
     emit('close')
   } catch (e: unknown) {
-    updateError.value = (e as Error).message ?? 'Failed to clear pending amount.'
+    updateError.value = (e as Error).message ?? 'Failed to update subscription.'
   } finally {
     isUpdating.value = false
   }
@@ -257,8 +160,6 @@ async function confirmDelete() {
             amount: snapshot.amount,
             categoryId: snapshot.category?.id ?? '',
             accountId: snapshot.account.id,
-            frequency: snapshot.frequency,
-            dayOfMonth: snapshot.dayOfMonth,
           }).catch(() => {/* undo failed silently */})
         },
       },
@@ -379,7 +280,7 @@ async function confirmDelete() {
           class="flex h-12 items-center rounded-xl border bg-surface transition-colors"
           :class="amountError ? 'border-danger ring-2 ring-danger' : 'border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary'"
         >
-          <span class="pl-4 pr-1 text-body text-text-muted">$</span>
+          <span class="pl-4 pr-1 text-body text-text-muted">{{ currencySymbol }}</span>
           <input
             id="edit-sub-amount"
             v-model="amountInput"
@@ -394,48 +295,6 @@ async function confirmDelete() {
         <p v-if="amountError" class="text-caption mt-1 text-danger" role="alert" data-testid="amount-error">
           {{ amountError }}
         </p>
-
-        <!-- Apply from next month toggle (when amount changed) -->
-        <div
-          v-if="amountChanged && !hasPendingAmount"
-          class="mt-2 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
-          data-testid="apply-next-month-section"
-        >
-          <div>
-            <p class="text-body text-text-primary">Apply from next month</p>
-            <p class="text-caption text-text-secondary">New amount takes effect on the 1st</p>
-          </div>
-          <input
-            v-model="applyNextMonth"
-            type="checkbox"
-            class="h-5 w-5 rounded accent-primary"
-            data-testid="apply-next-month-toggle"
-          />
-        </div>
-
-        <!-- Existing pending amount info -->
-        <div
-          v-if="hasPendingAmount"
-          class="mt-2 rounded-xl border px-4 py-3"
-          :style="{ borderColor: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }"
-          data-testid="pending-amount-info"
-        >
-          <p class="text-body text-text-primary">
-            Pending: {{ formatCurrency(subscription!.pendingAmount!, currency) }}
-          </p>
-          <p class="text-caption text-text-secondary">
-            Takes effect {{ pendingDateDisplay }}
-          </p>
-          <button
-            type="button"
-            class="text-caption mt-1 font-medium transition-colors"
-            :style="{ color: 'var(--color-danger)' }"
-            data-testid="cancel-pending-btn"
-            @click="clearPendingAmount"
-          >
-            Cancel pending change
-          </button>
-        </div>
       </div>
 
       <!-- Category picker -->
@@ -494,49 +353,6 @@ async function confirmDelete() {
         </div>
       </div>
 
-      <!-- Frequency toggle -->
-      <div class="mb-4">
-        <p class="text-caption mb-1 font-medium text-text-secondary">Frequency</p>
-        <div class="flex h-10 overflow-hidden rounded-xl border border-border">
-          <button
-            v-for="(label, freq) in { MONTHLY: 'Monthly', WEEKLY: 'Weekly', YEARLY: 'Yearly' }"
-            :key="freq"
-            type="button"
-            class="flex-1 text-body font-medium transition-colors"
-            :class="frequencyInput === freq ? 'text-white' : 'bg-surface text-text-secondary'"
-            :style="frequencyInput === freq ? { backgroundColor: 'var(--color-primary)' } : {}"
-            :data-testid="`freq-${freq.toLowerCase()}-btn`"
-            @click="frequencyInput = freq as 'MONTHLY' | 'WEEKLY' | 'YEARLY'"
-          >
-            {{ label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Day of Month (Monthly only) -->
-      <div v-if="showDayOfMonth" class="mb-4" data-testid="day-of-month-section">
-        <label
-          for="edit-sub-day"
-          class="text-caption mb-1 block font-medium text-text-secondary"
-        >
-          Day of Month
-        </label>
-        <input
-          id="edit-sub-day"
-          v-model="dayOfMonthInput"
-          type="number"
-          min="1"
-          max="31"
-          class="h-12 w-full rounded-xl border bg-surface px-4 text-body text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-          :class="dayOfMonthError ? 'border-danger ring-2 ring-danger' : 'border-border focus:border-primary'"
-          data-testid="day-of-month-input"
-          @blur="validateDayOfMonth"
-        />
-        <p v-if="dayOfMonthError" class="text-caption mt-1 text-danger" role="alert" data-testid="day-of-month-error">
-          {{ dayOfMonthError }}
-        </p>
-      </div>
-
       <!-- Active / Inactive toggle -->
       <div class="mb-4">
         <p class="text-caption mb-1 font-medium text-text-secondary">Status</p>
@@ -564,24 +380,6 @@ async function confirmDelete() {
             Inactive
           </button>
         </div>
-      </div>
-
-      <!-- Include current month toggle (when nextDueDate is in a future month) -->
-      <div
-        v-if="nextDueInFutureMonth"
-        class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
-        data-testid="include-current-month-section"
-      >
-        <div>
-          <p class="text-body text-text-primary">Move to this month</p>
-          <p class="text-caption text-text-secondary">Next due is {{ subscription?.nextDueDate }} — include this month?</p>
-        </div>
-        <input
-          v-model="includeCurrentMonthInput"
-          type="checkbox"
-          class="h-5 w-5 rounded accent-primary"
-          data-testid="include-current-month-toggle"
-        />
       </div>
 
       <!-- Error message -->

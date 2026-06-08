@@ -18,16 +18,6 @@ function navigateToAll() {
 
 const hasSubscriptions = computed(() => props.subscriptions.length > 0)
 
-function frequencyLabel(freq: string): string {
-  switch (freq) {
-    case 'DAILY': return '/day'
-    case 'WEEKLY': return '/wk'
-    case 'MONTHLY': return '/mo'
-    case 'YEARLY': return '/yr'
-    default: return '/mo'
-  }
-}
-
 function isIncome(sub: SubscriptionEntry): boolean {
   return sub.type === 'INCOME'
 }
@@ -89,10 +79,10 @@ function categoryColor(sub: SubscriptionEntry): string {
           </p>
         </div>
 
-        <!-- Amount + frequency -->
+        <!-- Amount -->
         <div class="shrink-0 text-right">
           <span class="text-body font-medium tabular-nums" :class="amountColorClass(sub)">
-            {{ amountPrefix(sub) }}{{ formatCurrency(sub.amount, currency) }}<span class="text-caption text-text-muted">{{ frequencyLabel(sub.frequency) }}</span>
+            {{ amountPrefix(sub) }}{{ formatCurrency(sub.amount, currency) }}<span class="text-caption text-text-muted">/mo</span>
           </span>
         </div>
       </button>

@@ -37,13 +37,8 @@ const RAW_SUBSCRIPTION = {
   name: 'Netflix',
   type: 'EXPENSE',
   amount: '15.99', // Money string
-  frequency: 'MONTHLY',
-  dayOfMonth: 15,
-  nextDueDate: '2026-04-15',
+  nextDueDate: '2026-04-01',
   isActive: true,
-  autoLog: false,
-  pendingAmount: null,
-  pendingEffectiveDate: null,
   category: {
     id: 'cat-1',
     name: 'Entertainment',

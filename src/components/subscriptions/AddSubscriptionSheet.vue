@@ -29,33 +29,16 @@ const typeInput = ref<'EXPENSE' | 'INCOME'>('EXPENSE')
 const amountInput = ref<string>('')
 const selectedCategoryId = ref<string>('')
 const selectedAccountId = ref<string>('')
-const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
-const dayOfMonthInput = ref<string>('1')
-const includeCurrentMonthInput = ref<boolean>(true)
 
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
 const nameError = ref<string | null>(null)
-const dayOfMonthError = ref<string | null>(null)
 
 // ── Computed ──────────────────────────────────────────────────
 const parsedAmount = computed(() => {
   const v = parseFloat(amountInput.value)
   return isNaN(v) ? 0 : v
-})
-
-const parsedDayOfMonth = computed(() => {
-  const v = parseInt(dayOfMonthInput.value)
-  return isNaN(v) ? 1 : v
-})
-
-const showDayOfMonth = computed(() => frequencyInput.value === 'MONTHLY')
-
-const dayAlreadyPassed = computed(() => {
-  if (!showDayOfMonth.value) return false
-  const today = new Date()
-  return parsedDayOfMonth.value < today.getDate()
 })
 
 const defaultAccount = computed(() => props.accounts.find((a) => a.isDefault) ?? props.accounts[0] ?? null)
@@ -65,10 +48,6 @@ const isFormValid = computed(() => {
   if (parsedAmount.value <= 0) return false
   if (!selectedCategoryId.value) return false
   if (!selectedAccountId.value) return false
-  if (showDayOfMonth.value) {
-    const d = parsedDayOfMonth.value
-    if (d < 1 || d > 31) return false
-  }
   return true
 })
 
@@ -82,13 +61,10 @@ watch(
       amountInput.value = ''
       selectedCategoryId.value = ''
       selectedAccountId.value = defaultAccount.value?.id ?? ''
-      frequencyInput.value = 'MONTHLY'
-      dayOfMonthInput.value = '1'
       isSubmitting.value = false
       submitError.value = null
       amountError.value = null
       nameError.value = null
-      dayOfMonthError.value = null
     }
   },
 )
@@ -117,26 +93,11 @@ function validateAmount(): boolean {
   return true
 }
 
-function validateDayOfMonth(): boolean {
-  if (!showDayOfMonth.value) {
-    dayOfMonthError.value = null
-    return true
-  }
-  const d = parsedDayOfMonth.value
-  if (d < 1 || d > 31) {
-    dayOfMonthError.value = 'Day must be between 1 and 31.'
-    return false
-  }
-  dayOfMonthError.value = null
-  return true
-}
-
 // ── Submit ────────────────────────────────────────────────────
 async function handleSubmit() {
   const validName = validateName()
   const validAmount = validateAmount()
-  const validDay = validateDayOfMonth()
-  if (!validName || !validAmount || !validDay) return
+  if (!validName || !validAmount) return
   if (!selectedCategoryId.value || !selectedAccountId.value) return
 
   isSubmitting.value = true
@@ -148,9 +109,6 @@ async function handleSubmit() {
       amount: parsedAmount.value,
       categoryId: selectedCategoryId.value,
       accountId: selectedAccountId.value,
-      frequency: frequencyInput.value,
-      dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
-      includeCurrentMonth: dayAlreadyPassed.value ? includeCurrentMonthInput.value : undefined,
     })
     emit('created')
     emit('close')
@@ -302,67 +260,10 @@ async function handleSubmit() {
         </div>
       </div>
 
-      <!-- Frequency toggle -->
-      <div class="mb-4">
-        <p class="text-caption mb-1 font-medium text-text-secondary">Frequency</p>
-        <div class="flex h-10 overflow-hidden rounded-xl border border-border">
-          <button
-            v-for="(label, freq) in { MONTHLY: 'Monthly', WEEKLY: 'Weekly', YEARLY: 'Yearly' }"
-            :key="freq"
-            type="button"
-            class="flex-1 text-body font-medium transition-colors"
-            :class="frequencyInput === freq ? 'text-white' : 'bg-surface text-text-secondary'"
-            :style="frequencyInput === freq ? { backgroundColor: 'var(--color-primary)' } : {}"
-            :data-testid="`freq-${freq.toLowerCase()}-btn`"
-            @click="frequencyInput = freq as 'MONTHLY' | 'WEEKLY' | 'YEARLY'"
-          >
-            {{ label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Day of Month (Monthly only) -->
-      <div v-if="showDayOfMonth" class="mb-4" data-testid="day-of-month-section">
-        <label
-          for="add-sub-day"
-          class="text-caption mb-1 block font-medium text-text-secondary"
-        >
-          Day of Month
-        </label>
-        <input
-          id="add-sub-day"
-          v-model="dayOfMonthInput"
-          type="number"
-          min="1"
-          max="31"
-          placeholder="1"
-          class="h-12 w-full rounded-xl border bg-surface px-4 text-body text-text-primary outline-none transition-colors focus:ring-2 focus:ring-primary"
-          :class="dayOfMonthError ? 'border-danger ring-2 ring-danger' : 'border-border focus:border-primary'"
-          data-testid="day-of-month-input"
-          @blur="validateDayOfMonth"
-        />
-        <p v-if="dayOfMonthError" class="text-caption mt-1 text-danger" role="alert" data-testid="day-of-month-error">
-          {{ dayOfMonthError }}
-        </p>
-      </div>
-
-      <!-- Include current month toggle (only when day already passed) -->
-      <div
-        v-if="dayAlreadyPassed"
-        class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted"
-        data-testid="include-current-month-section"
-      >
-        <div>
-          <p class="text-body text-text-primary">Include this month</p>
-          <p class="text-caption text-text-secondary">Day {{ parsedDayOfMonth }} already passed — count it anyway?</p>
-        </div>
-        <input
-          v-model="includeCurrentMonthInput"
-          type="checkbox"
-          class="h-5 w-5 rounded accent-primary"
-          data-testid="include-current-month-toggle"
-        />
-      </div>
+      <!-- Info note -->
+      <p class="text-caption mb-4 text-text-secondary" data-testid="monthly-info">
+        Recurring monthly. The first transaction logs today; subsequent transactions log automatically on the 1st of each month.
+      </p>
 
       <!-- Submit error -->
       <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert" data-testid="submit-error">

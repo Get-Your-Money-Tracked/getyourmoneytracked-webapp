@@ -64,7 +64,6 @@ const RAW_DASHBOARD = {
       currency: 'USD',
       categoryId: 'cat-2',
       accountId: 'acc-1',
-      frequency: 'MONTHLY',
       nextDueDate: '2026-03-20',
       isActive: true,
     },

@@ -10,22 +10,6 @@ import {
   type UpdateSubscriptionInput,
 } from '@/graphql/queries/subscriptions'
 
-/** Normalize any frequency amount to a monthly equivalent */
-export function toMonthlyAmount(amount: number, frequency: SubscriptionEntry['frequency']): number {
-  switch (frequency) {
-    case 'DAILY':
-      return amount * 30.44
-    case 'WEEKLY':
-      return amount * 4.33
-    case 'MONTHLY':
-      return amount
-    case 'YEARLY':
-      return amount / 12
-    default:
-      return amount
-  }
-}
-
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
   // ── State ────────────────────────────────────────────────────
   const subscriptions = ref<SubscriptionEntry[]>([])
@@ -44,18 +28,18 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     subscriptions.value.filter((s) => !s.isActive),
   )
 
-  /** Total monthly expenses (active, normalized to monthly) */
+  /** Total monthly expenses (active) */
   const monthlyExpenses = computed(() =>
     activeSubscriptions.value
       .filter((s) => s.type === 'EXPENSE')
-      .reduce((sum, s) => sum + toMonthlyAmount(s.amount, s.frequency), 0),
+      .reduce((sum, s) => sum + s.amount, 0),
   )
 
-  /** Total monthly income (active, normalized to monthly) */
+  /** Total monthly income (active) */
   const monthlyIncome = computed(() =>
     activeSubscriptions.value
       .filter((s) => s.type === 'INCOME')
-      .reduce((sum, s) => sum + toMonthlyAmount(s.amount, s.frequency), 0),
+      .reduce((sum, s) => sum + s.amount, 0),
   )
 
   // ── Actions ──────────────────────────────────────────────────

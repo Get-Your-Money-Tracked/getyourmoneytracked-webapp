@@ -18,10 +18,8 @@ function makeBill(id: string, name: string, dueDate: string): UpcomingBill {
     currency: 'USD',
     categoryId: null,
     accountId: 'acc-1',
-    frequency: 'MONTHLY',
     nextDueDate: dueDate,
     isActive: true,
-    autoLog: false,
   }
 }
 

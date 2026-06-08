@@ -18,10 +18,8 @@ function makeBill(overrides: Partial<UpcomingBill> = {}): UpcomingBill {
     currency: 'USD',
     categoryId: null,
     accountId: 'acc-1',
-    frequency: 'MONTHLY',
     nextDueDate: '2026-03-25',
     isActive: true,
-    autoLog: false,
     ...overrides,
   }
 }

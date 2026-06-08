@@ -129,35 +129,27 @@ describe('AddSubscriptionSheet', () => {
     expect(wrapper.find('[data-testid="account-select"]').exists()).toBe(true)
   })
 
-  it('renders frequency toggle buttons (Monthly, Weekly, Yearly)', () => {
+  it('renders monthly info note', () => {
     const wrapper = mountSheet(true)
-    expect(wrapper.find('[data-testid="freq-monthly-btn"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="freq-weekly-btn"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="freq-yearly-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="monthly-info"]').exists()).toBe(true)
   })
 
-  it('shows day-of-month section by default (Monthly frequency)', () => {
+  it('does not render any frequency toggle (monthly-only)', () => {
     const wrapper = mountSheet(true)
-    expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="freq-monthly-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="freq-weekly-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="freq-yearly-btn"]').exists()).toBe(false)
   })
 
-  it('hides day-of-month section when Weekly selected', async () => {
+  it('does not render day-of-month input (always 1st of month)', () => {
     const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="freq-weekly-btn"]').trigger('click')
     expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="day-of-month-input"]').exists()).toBe(false)
   })
 
-  it('hides day-of-month section when Yearly selected', async () => {
+  it('does not render include-current-month toggle (always includes current month)', () => {
     const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="freq-yearly-btn"]').trigger('click')
-    expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(false)
-  })
-
-  it('shows day-of-month section when Monthly selected after changing', async () => {
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="freq-weekly-btn"]').trigger('click')
-    await wrapper.find('[data-testid="freq-monthly-btn"]').trigger('click')
-    expect(wrapper.find('[data-testid="day-of-month-section"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="include-current-month-section"]').exists()).toBe(false)
   })
 
   // ── Submit button disabled state ──────────────────────────────
@@ -200,21 +192,6 @@ describe('AddSubscriptionSheet', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="amount-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Amount must be greater than 0.')
-  })
-
-  it('shows day-of-month error when blurring with invalid value', async () => {
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="day-of-month-input"]').setValue('50')
-    await wrapper.find('[data-testid="day-of-month-input"]').trigger('blur')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="day-of-month-error"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Day must be between 1 and 31.')
-  })
-
-  it('no day-of-month error when frequency is Weekly', async () => {
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="freq-weekly-btn"]').trigger('click')
-    expect(wrapper.find('[data-testid="day-of-month-error"]').exists()).toBe(false)
   })
 
   // ── Type toggle ───────────────────────────────────────────────
@@ -267,17 +244,30 @@ describe('AddSubscriptionSheet', () => {
     await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
     await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
     await flushPromises()
-    expect(_mockCreateSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Netflix',
-        type: 'EXPENSE',
-        amount: 15.99,
-        categoryId: 'cat-1',
-        accountId: 'acc-1',
-        frequency: 'MONTHLY',
-        dayOfMonth: 1,
-      }),
-    )
+    expect(_mockCreateSubscription).toHaveBeenCalledWith({
+      name: 'Netflix',
+      type: 'EXPENSE',
+      amount: 15.99,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+    })
+  })
+
+  it('does not send any frequency, dayOfMonth, or includeCurrentMonth fields', async () => {
+    _mockCreateSubscription.mockResolvedValueOnce({ id: 'sub-new' })
+    const wrapper = mountSheet(true)
+    await wrapper.find('[data-testid="name-input"]').setValue('Netflix')
+    await wrapper.find('[data-testid="amount-input"]').setValue('15.99')
+    await wrapper.find('[data-testid="category-select"]').setValue('cat-1')
+    await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
+    await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
+    await flushPromises()
+    const payload = _mockCreateSubscription.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('frequency')
+    expect(payload).not.toHaveProperty('dayOfMonth')
+    expect(payload).not.toHaveProperty('autoLog')
+    expect(payload).not.toHaveProperty('startDate')
+    expect(payload).not.toHaveProperty('includeCurrentMonth')
   })
 
   it('emits created and close after successful creation', async () => {
@@ -293,21 +283,6 @@ describe('AddSubscriptionSheet', () => {
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
-  it('submits with null dayOfMonth when frequency is Weekly', async () => {
-    _mockCreateSubscription.mockResolvedValueOnce({ id: 'sub-new' })
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="name-input"]').setValue('Paycheck')
-    await wrapper.find('[data-testid="freq-weekly-btn"]').trigger('click')
-    await wrapper.find('[data-testid="amount-input"]').setValue('500')
-    await wrapper.find('[data-testid="category-select"]').setValue('cat-1')
-    await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
-    await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
-    await flushPromises()
-    expect(_mockCreateSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ dayOfMonth: null, frequency: 'WEEKLY' }),
-    )
-  })
-
   it('shows submit error when API call fails', async () => {
     _mockCreateSubscription.mockRejectedValueOnce(new Error('Duplicate subscription'))
     const wrapper = mountSheet(true)
@@ -320,9 +295,6 @@ describe('AddSubscriptionSheet', () => {
     expect(wrapper.find('[data-testid="submit-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Duplicate subscription')
   })
-
-  // ── autoLog toggle ────────────────────────────────────────────
-  // Auto-log toggle removed in v1.1 — all subscriptions auto-log when overdue.
 
   it('resets form when sheet reopens', async () => {
     const wrapper = mountSheet(true)

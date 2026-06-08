@@ -10,7 +10,6 @@ function parseSubscriptionMoney(raw: Record<string, unknown>): SubscriptionEntry
   return {
     ...raw,
     amount: parseMoney(raw.amount),
-    pendingAmount: raw.pendingAmount != null ? parseMoney(raw.pendingAmount) : null,
     account: account
       ? { ...account, balance: parseMoney(account.balance) }
       : account,
@@ -26,13 +25,8 @@ const SUBSCRIPTIONS_QUERY = `
       name
       type
       amount
-      frequency
-      dayOfMonth
       nextDueDate
       isActive
-      autoLog
-      pendingAmount
-      pendingEffectiveDate
       category {
         id
         name
@@ -65,13 +59,8 @@ const CREATE_SUBSCRIPTION_MUTATION = `
       name
       type
       amount
-      frequency
-      dayOfMonth
       nextDueDate
       isActive
-      autoLog
-      pendingAmount
-      pendingEffectiveDate
       category {
         id
         name
@@ -102,13 +91,8 @@ const UPDATE_SUBSCRIPTION_MUTATION = `
       name
       type
       amount
-      frequency
-      dayOfMonth
       nextDueDate
       isActive
-      autoLog
-      pendingAmount
-      pendingEffectiveDate
       category {
         id
         name
@@ -146,12 +130,6 @@ export interface CreateSubscriptionInput {
   amount: number
   categoryId: string
   accountId: string
-  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
-  dayOfMonth?: number | null
-  startDate?: string | null
-  autoLog?: boolean
-  /** When true and dayOfMonth has already passed, first occurrence is this month (overdue). */
-  includeCurrentMonth?: boolean
 }
 
 export interface UpdateSubscriptionInput {
@@ -159,21 +137,7 @@ export interface UpdateSubscriptionInput {
   amount?: number
   categoryId?: string
   accountId?: string
-  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
-  dayOfMonth?: number | null
   isActive?: boolean
-  /** Explicitly set next due date (YYYY-MM-DD). Used after auto-logging to advance the date. */
-  nextDueDate?: string | null
-  /** Toggle auto-log flag. */
-  autoLog?: boolean
-  /** When true, forces nextDueDate into the current month even if dayOfMonth has passed. */
-  includeCurrentMonth?: boolean
-  /** Deferred amount change — will replace amount on the effective date. */
-  pendingAmount?: number
-  /** Date when pendingAmount takes effect (YYYY-MM-DD). */
-  pendingEffectiveDate?: string
-  /** When true, clears any existing pending amount change. */
-  clearPendingAmount?: boolean
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────
@@ -206,7 +170,6 @@ export async function callUpdateSubscription(
   const gqlInput = {
     ...input,
     amount: input.amount != null ? toMoney(input.amount) : undefined,
-    pendingAmount: input.pendingAmount != null ? toMoney(input.pendingAmount) : undefined,
   }
   const result = await urqlClient
     .mutation(UPDATE_SUBSCRIPTION_MUTATION, { id, input: gqlInput })
