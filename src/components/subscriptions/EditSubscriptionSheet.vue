@@ -33,7 +33,6 @@ const selectedAccountId = ref<string>('')
 const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
 const dayOfMonthInput = ref<string>('1')
 const isActiveInput = ref<boolean>(true)
-const autoLogInput = ref<boolean>(false)
 const includeCurrentMonthInput = ref<boolean>(false)
 const applyNextMonth = ref<boolean>(false)
 
@@ -110,7 +109,6 @@ watch(
       frequencyInput.value = s.frequency
       dayOfMonthInput.value = s.dayOfMonth?.toString() ?? '1'
       isActiveInput.value = s.isActive
-      autoLogInput.value = s.autoLog
       includeCurrentMonthInput.value = false
       applyNextMonth.value = false
       isUpdating.value = false
@@ -188,7 +186,6 @@ async function handleUpdate() {
       frequency: frequencyInput.value,
       dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
       isActive: isActiveInput.value,
-      autoLog: autoLogInput.value,
       includeCurrentMonth: includeCurrentMonthInput.value || undefined,
     }
 
@@ -567,20 +564,6 @@ async function confirmDelete() {
             Inactive
           </button>
         </div>
-      </div>
-
-      <!-- Auto-log toggle -->
-      <div class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted" data-testid="autolog-section">
-        <div>
-          <p class="text-body text-text-primary">Prompt me to log this item</p>
-          <p class="text-caption text-text-secondary">when it becomes overdue</p>
-        </div>
-        <input
-          v-model="autoLogInput"
-          type="checkbox"
-          class="h-5 w-5 rounded accent-primary"
-          data-testid="autolog-toggle"
-        />
       </div>
 
       <!-- Include current month toggle (when nextDueDate is in a future month) -->

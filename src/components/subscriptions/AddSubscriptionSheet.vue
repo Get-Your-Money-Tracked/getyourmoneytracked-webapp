@@ -31,7 +31,6 @@ const selectedCategoryId = ref<string>('')
 const selectedAccountId = ref<string>('')
 const frequencyInput = ref<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('MONTHLY')
 const dayOfMonthInput = ref<string>('1')
-const autoLogInput = ref<boolean>(false)
 const includeCurrentMonthInput = ref<boolean>(true)
 
 const isSubmitting = ref(false)
@@ -85,7 +84,6 @@ watch(
       selectedAccountId.value = defaultAccount.value?.id ?? ''
       frequencyInput.value = 'MONTHLY'
       dayOfMonthInput.value = '1'
-      autoLogInput.value = false
       isSubmitting.value = false
       submitError.value = null
       amountError.value = null
@@ -152,7 +150,6 @@ async function handleSubmit() {
       accountId: selectedAccountId.value,
       frequency: frequencyInput.value,
       dayOfMonth: showDayOfMonth.value ? parsedDayOfMonth.value : null,
-      autoLog: autoLogInput.value,
       includeCurrentMonth: dayAlreadyPassed.value ? includeCurrentMonthInput.value : undefined,
     })
     emit('created')
@@ -347,20 +344,6 @@ async function handleSubmit() {
         <p v-if="dayOfMonthError" class="text-caption mt-1 text-danger" role="alert" data-testid="day-of-month-error">
           {{ dayOfMonthError }}
         </p>
-      </div>
-
-      <!-- Auto-log toggle -->
-      <div class="mb-4 flex items-center justify-between rounded-xl px-4 py-3 bg-surface-muted" data-testid="autolog-section">
-        <div>
-          <p class="text-body text-text-primary">Prompt me to log this item</p>
-          <p class="text-caption text-text-secondary">when it becomes overdue</p>
-        </div>
-        <input
-          v-model="autoLogInput"
-          type="checkbox"
-          class="h-5 w-5 rounded accent-primary"
-          data-testid="autolog-toggle"
-        />
       </div>
 
       <!-- Include current month toggle (only when day already passed) -->

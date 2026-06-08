@@ -267,16 +267,17 @@ describe('AddSubscriptionSheet', () => {
     await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
     await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
     await flushPromises()
-    expect(_mockCreateSubscription).toHaveBeenCalledWith({
-      name: 'Netflix',
-      type: 'EXPENSE',
-      amount: 15.99,
-      categoryId: 'cat-1',
-      accountId: 'acc-1',
-      frequency: 'MONTHLY',
-      dayOfMonth: 1,
-      autoLog: false,
-    })
+    expect(_mockCreateSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Netflix',
+        type: 'EXPENSE',
+        amount: 15.99,
+        categoryId: 'cat-1',
+        accountId: 'acc-1',
+        frequency: 'MONTHLY',
+        dayOfMonth: 1,
+      }),
+    )
   })
 
   it('emits created and close after successful creation', async () => {
@@ -321,62 +322,7 @@ describe('AddSubscriptionSheet', () => {
   })
 
   // ── autoLog toggle ────────────────────────────────────────────
-  it('renders auto-log section', () => {
-    const wrapper = mountSheet(true)
-    expect(wrapper.find('[data-testid="autolog-section"]').exists()).toBe(true)
-  })
-
-  it('autoLog toggle defaults to unchecked', () => {
-    const wrapper = mountSheet(true)
-    const cb = wrapper.find('[data-testid="autolog-toggle"]').element as HTMLInputElement
-    expect(cb.checked).toBe(false)
-  })
-
-  it('checking autoLog toggle sets it to true', async () => {
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="autolog-toggle"]').setValue(true)
-    const cb = wrapper.find('[data-testid="autolog-toggle"]').element as HTMLInputElement
-    expect(cb.checked).toBe(true)
-  })
-
-  it('submits with autoLog=false by default', async () => {
-    _mockCreateSubscription.mockResolvedValueOnce({ id: 'sub-new' })
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="name-input"]').setValue('Netflix')
-    await wrapper.find('[data-testid="amount-input"]').setValue('15.99')
-    await wrapper.find('[data-testid="category-select"]').setValue('cat-1')
-    await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
-    await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
-    await flushPromises()
-    expect(_mockCreateSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ autoLog: false }),
-    )
-  })
-
-  it('submits with autoLog=true when toggle is checked', async () => {
-    _mockCreateSubscription.mockResolvedValueOnce({ id: 'sub-new' })
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="name-input"]').setValue('Netflix')
-    await wrapper.find('[data-testid="amount-input"]').setValue('15.99')
-    await wrapper.find('[data-testid="category-select"]').setValue('cat-1')
-    await wrapper.find('[data-testid="account-select"]').setValue('acc-1')
-    await wrapper.find('[data-testid="autolog-toggle"]').setValue(true)
-    await wrapper.find('[data-testid="add-submit-btn"]').trigger('click')
-    await flushPromises()
-    expect(_mockCreateSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ autoLog: true }),
-    )
-  })
-
-  it('resets autoLog toggle to false when sheet reopens', async () => {
-    const wrapper = mountSheet(true)
-    await wrapper.find('[data-testid="autolog-toggle"]').setValue(true)
-    await wrapper.setProps({ open: false })
-    await wrapper.setProps({ open: true })
-    await flushPromises()
-    const cb = wrapper.find('[data-testid="autolog-toggle"]').element as HTMLInputElement
-    expect(cb.checked).toBe(false)
-  })
+  // Auto-log toggle removed in v1.1 — all subscriptions auto-log when overdue.
 
   it('resets form when sheet reopens', async () => {
     const wrapper = mountSheet(true)

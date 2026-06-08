@@ -10,8 +10,6 @@ import { useAccountsStore } from '@/stores/accounts'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useGoalsStore } from '@/stores/goals'
 import { useDashboardRefresh } from '@/composables/useDashboardRefresh'
-import { useOverdueRecurring } from '@/composables/useOverdueRecurring'
-import { formatCurrency } from '@/utils/currency'
 import type { Dashboard, Transaction } from '@/types'
 import DashboardHeader from '@/components/dashboard/DashboardHeader.vue'
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton.vue'
@@ -24,10 +22,8 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import AddTransactionSheet from '@/components/transactions/AddTransactionSheet.vue'
 import EditTransactionSheet from '@/components/transactions/EditTransactionSheet.vue'
 import PageTip from '@/components/common/PageTip.vue'
-import OverdueBanner from '@/components/dashboard/OverdueBanner.vue'
 import GoalsWidget from '@/components/dashboard/GoalsWidget.vue'
 import RecentRecurring from '@/components/dashboard/RecentRecurring.vue'
-import LogRecurringSheet from '@/components/subscriptions/LogRecurringSheet.vue'
 
 // ── Stores / routing ──────────────────────────────────────────────────────────
 const route = useRoute()
@@ -40,26 +36,9 @@ const subscriptionsStore = useSubscriptionsStore()
 const goalsStore = useGoalsStore()
 const { dashboardVersion } = useDashboardRefresh()
 
-// ── Overdue recurring ─────────────────────────────────────────────────────────
-const { overdueItems, isVisible: overdueVisible, dismiss: dismissOverdue, logItems } =
-  useOverdueRecurring(() => subscriptionsStore.subscriptions)
-
-const showLogRecurringSheet = ref(false)
-
-async function handleLoggedRecurring(count: number, total: number) {
-  try {
-    // Perform the actual logging via the composable
-    await logItems(overdueItems.value)
-    // Reload subscriptions so the store reflects updated nextDueDates
-    await subscriptionsStore.loadSubscriptions()
-    const msg = `Logged ${count} recurring ${count === 1 ? 'transaction' : 'transactions'} (${formatCurrency(total, authStore.defaultCurrency)})`
-    toastStore.show(msg, 'success')
-    loadDashboard()
-  } catch (e: unknown) {
-    const msg = (e as Error)?.message ?? 'Failed to log recurring transactions.'
-    toastStore.show(msg, 'error')
-  }
-}
+// Overdue subscriptions are now auto-logged by the backend on every
+// dashboard/subscriptions query (EPIC-09 AC7); the frontend no longer
+// surfaces a manual review banner.
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -364,16 +343,6 @@ onUnmounted(() => {
 
         <!-- Right column: Recent Transactions + Upcoming Bills + Budget Progress -->
         <div v-if="!isEmpty" class="md:col-span-2">
-          <!-- Overdue recurring banner -->
-          <OverdueBanner
-            v-if="overdueVisible"
-            :items="overdueItems"
-            :currency="authStore.defaultCurrency"
-            data-testid="overdue-banner-wrapper"
-            @dismiss="dismissOverdue"
-            @review="showLogRecurringSheet = true"
-          />
-
           <!-- Recent Transactions -->
           <RecentTransactions
             :transactions="dashboard.recentTransactions"
@@ -422,15 +391,6 @@ onUnmounted(() => {
       @close="showEditTransaction = false"
       @saved="onTransactionSaved"
       @deleted="onTransactionDeleted"
-    />
-
-    <!-- Log Recurring Sheet -->
-    <LogRecurringSheet
-      :open="showLogRecurringSheet"
-      :items="overdueItems"
-      :currency="authStore.defaultCurrency"
-      @close="showLogRecurringSheet = false"
-      @logged="handleLoggedRecurring"
     />
   </div>
 </template>
