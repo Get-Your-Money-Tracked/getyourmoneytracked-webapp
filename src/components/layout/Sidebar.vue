@@ -27,7 +27,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const navItems = [
-  { icon: Home, label: 'DEPLOY-TEST-123', path: '/dashboard' },
+  { icon: Home, label: 'Dashboard', path: '/dashboard' },
   { icon: CalendarClock, label: 'History', path: '/history' },
   { icon: Search, label: 'Search', path: '/search' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
