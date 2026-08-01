@@ -111,6 +111,20 @@ describe('fetchSubscriptions', () => {
     const queryString = (mockQuery.mock.calls[0] as unknown[])[0] as string
     expect(queryString).toContain('includeInTotal')
   })
+
+  it('does not request legacy recurring fields', async () => {
+    mockToPromise.mockResolvedValueOnce({
+      data: { subscriptions: [] },
+      error: undefined,
+    })
+
+    await fetchSubscriptions()
+
+    const query = (mockQuery.mock.calls[0] as unknown[])[0] as string
+    for (const field of ['frequency', 'dayOfMonth', 'autoLog']) {
+      expect(query).not.toContain(field)
+    }
+  })
 })
 
 // ── callCreateSubscription ───────────────────────────────────────────────────
@@ -134,6 +148,31 @@ describe('callCreateSubscription', () => {
     const input = variables.input as Record<string, unknown>
     expect(input.amount).toBe('15.99')
     expect(typeof input.amount).toBe('string')
+  })
+
+  it('uses the monthly-only GraphQL contract', async () => {
+    mockToPromise.mockResolvedValueOnce({
+      data: { createSubscription: RAW_SUBSCRIPTION },
+      error: undefined,
+    })
+
+    await callCreateSubscription({
+      name: 'Netflix',
+      type: 'EXPENSE',
+      amount: 15.99,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+    })
+
+    const mutation = (mockMutation.mock.calls[0] as unknown[])[0] as string
+    const variables = (mockMutation.mock.calls[0] as unknown[])[1] as Record<string, unknown>
+    const input = variables.input as Record<string, unknown>
+    const legacyFields = ['frequency', 'dayOfMonth', 'autoLog']
+
+    for (const field of legacyFields) {
+      expect(input).not.toHaveProperty(field)
+      expect(mutation).not.toContain(field)
+    }
   })
 
   it('parses Money fields in response', async () => {
@@ -183,6 +222,24 @@ describe('callUpdateSubscription', () => {
     const input = variables.input as Record<string, unknown>
     expect(input.amount).toBeUndefined()
     expect(input.name).toBe('Disney+')
+  })
+
+  it('uses the monthly-only GraphQL contract', async () => {
+    mockToPromise.mockResolvedValueOnce({
+      data: { updateSubscription: RAW_SUBSCRIPTION },
+      error: undefined,
+    })
+
+    await callUpdateSubscription('sub-1', { name: 'Disney+' })
+
+    const mutation = (mockMutation.mock.calls[0] as unknown[])[0] as string
+    const variables = (mockMutation.mock.calls[0] as unknown[])[1] as Record<string, unknown>
+    const input = variables.input as Record<string, unknown>
+
+    for (const field of ['frequency', 'dayOfMonth', 'autoLog']) {
+      expect(input).not.toHaveProperty(field)
+      expect(mutation).not.toContain(field)
+    }
   })
 
   it('uses separate id and input args (subscription schema pattern)', async () => {
