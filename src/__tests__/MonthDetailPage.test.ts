@@ -6,6 +6,7 @@ import MonthDetailPage from '@/pages/MonthDetailPage.vue'
 import TransactionListItem from '@/components/transactions/TransactionListItem.vue'
 import type { MonthDetail } from '@/types'
 import { fetchMonthDetail } from '@/graphql/queries/history'
+import { exportTransactionsCSV } from '@/lib/export'
 
 // ── Mock chart (CategoryPieChart uses vue-chartjs) ────────────────────────────
 vi.mock('vue-chartjs', () => ({
@@ -42,6 +43,15 @@ vi.mock('@/components/transactions/EditTransactionSheet.vue', () => ({
     emits: ['close', 'saved', 'deleted'],
     template: '<div data-testid="edit-transaction-sheet" :data-open="open" />',
   },
+}))
+
+vi.mock('@/lib/export', () => ({
+  exportTransactionsCSV: vi.fn(),
+}))
+
+const mockToastShow = vi.fn()
+vi.mock('@/stores/toast', () => ({
+  useToastStore: () => ({ show: mockToastShow }),
 }))
 
 // ── Mock auth store ───────────────────────────────────────────────────────────
@@ -106,6 +116,8 @@ describe('MonthDetailPage', () => {
   beforeEach(() => {
     _mockDetail.value = null
     _mockFetchError.value = null
+    vi.mocked(exportTransactionsCSV).mockReset()
+    mockToastShow.mockReset()
   })
 
   it('mounts without errors', async () => {
@@ -235,6 +247,22 @@ describe('MonthDetailPage', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledWith('2025-12')
+  })
+
+  it('exports only expenses from the selected month as CSV', async () => {
+    _mockDetail.value = makeDetail()
+    const wrapper = await mountPage('2024-02')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="export-expenses-csv"]').trigger('click')
+    await flushPromises()
+
+    expect(exportTransactionsCSV).toHaveBeenCalledWith({
+      startDate: '2024-02-01',
+      endDate: '2024-02-29',
+      type: 'EXPENSE',
+    })
+    expect(mockToastShow).toHaveBeenCalledWith('Expenses CSV downloaded', 'success')
   })
 
   it('renders chart section when categoryBreakdown has items', async () => {

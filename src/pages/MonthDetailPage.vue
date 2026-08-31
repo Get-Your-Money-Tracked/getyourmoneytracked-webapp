@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Search } from 'lucide-vue-next'
+import { ArrowLeft, Download, Loader2, Search } from 'lucide-vue-next'
 import type { MonthDetail, Transaction, SubscriptionEntry } from '@/types'
 import type { TransactionFilter } from '@/graphql/queries/transactions'
 import { fetchMonthDetail } from '@/graphql/queries/history'
 import { useAuthStore } from '@/stores/auth'
 import { useAccountsStore } from '@/stores/accounts'
 import { useCategoriesStore } from '@/stores/categories'
+import { useToastStore } from '@/stores/toast'
 import { formatCurrency } from '@/utils/currency'
+import { exportTransactionsCSV } from '@/lib/export'
 import PercentBadge from '@/components/common/PercentBadge.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import CategoryPieChart from '@/components/charts/CategoryPieChart.vue'
@@ -31,6 +33,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const accountsStore = useAccountsStore()
 const categoriesStore = useCategoriesStore()
+const toastStore = useToastStore()
 
 // ── Month param ───────────────────────────────────────────────────────────────
 
@@ -174,6 +177,31 @@ const groupedTransactions = computed(() => groupTransactionsByDate(filteredTrans
 
 const showEditTransaction = ref(false)
 const editingTransaction = ref<Transaction | null>(null)
+const isExporting = ref(false)
+
+function monthDateRange(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const lastDay = new Date(year, monthNumber, 0).getDate()
+  return {
+    startDate: `${month}-01`,
+    endDate: `${month}-${String(lastDay).padStart(2, '0')}`,
+  }
+}
+
+async function exportMonthExpenses() {
+  isExporting.value = true
+  try {
+    await exportTransactionsCSV({
+      ...monthDateRange(rawMonth),
+      type: 'EXPENSE',
+    })
+    toastStore.show('Expenses CSV downloaded', 'success')
+  } catch {
+    toastStore.show('Expenses export failed', 'error')
+  } finally {
+    isExporting.value = false
+  }
+}
 
 function openEditTransaction(tx: Transaction) {
   if ((tx as DisplayTransaction)._isRecurring) return
@@ -335,15 +363,28 @@ onMounted(async () => {
       <!-- Transactions section -->
       <div class="mt-6 flex items-center justify-between px-4" data-testid="transactions-section-header">
         <h2 class="text-card-title font-semibold text-text-primary">Transactions</h2>
-        <button
-          type="button"
-          class="rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-muted"
-          aria-label="Toggle search"
-          data-testid="search-toggle"
-          @click="showSearch = !showSearch"
-        >
-          <Search :size="20" />
-        </button>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            class="rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Download expenses CSV"
+            data-testid="export-expenses-csv"
+            :disabled="isExporting"
+            @click="exportMonthExpenses"
+          >
+            <Loader2 v-if="isExporting" :size="20" class="animate-spin" />
+            <Download v-else :size="20" />
+          </button>
+          <button
+            type="button"
+            class="rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-muted"
+            aria-label="Toggle search"
+            data-testid="search-toggle"
+            @click="showSearch = !showSearch"
+          >
+            <Search :size="20" />
+          </button>
+        </div>
       </div>
 
       <div class="mx-4 mt-2 overflow-hidden rounded-xl bg-surface shadow-card" data-testid="transactions-section">
