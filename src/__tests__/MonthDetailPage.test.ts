@@ -3,7 +3,9 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { ref, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import MonthDetailPage from '@/pages/MonthDetailPage.vue'
+import TransactionListItem from '@/components/transactions/TransactionListItem.vue'
 import type { MonthDetail } from '@/types'
+import { fetchMonthDetail } from '@/graphql/queries/history'
 
 // ── Mock chart (CategoryPieChart uses vue-chartjs) ────────────────────────────
 vi.mock('vue-chartjs', () => ({
@@ -31,6 +33,15 @@ vi.mock('@/graphql/queries/history', () => ({
     if (_mockFetchError.value) throw new Error(_mockFetchError.value)
     return _mockDetail.value
   }),
+}))
+
+vi.mock('@/components/transactions/EditTransactionSheet.vue', () => ({
+  default: {
+    name: 'EditTransactionSheet',
+    props: ['open', 'transaction'],
+    emits: ['close', 'saved', 'deleted'],
+    template: '<div data-testid="edit-transaction-sheet" :data-open="open" />',
+  },
 }))
 
 // ── Mock auth store ───────────────────────────────────────────────────────────
@@ -193,6 +204,37 @@ describe('MonthDetailPage', () => {
     const wrapper = await mountPage()
     await flushPromises()
     expect(wrapper.find('[data-testid="transactions-section"]').exists()).toBe(true)
+  })
+
+  it('opens the edit sheet when a regular transaction is selected', async () => {
+    const transaction = {
+      id: 'tx-1', type: 'EXPENSE' as const, amount: 42, date: '2025-12-15',
+      accountId: 'account-1', toAccountId: null, categoryId: 'category-1',
+      description: 'Groceries', notes: null, tags: [], receiptUrl: null,
+      createdAt: '', updatedAt: '',
+    }
+    _mockDetail.value = makeDetail({ transactions: [transaction] })
+    const wrapper = await mountPage()
+    await flushPromises()
+
+    await wrapper.findComponent(TransactionListItem).vm.$emit('select', transaction)
+
+    const sheet = wrapper.findComponent({ name: 'EditTransactionSheet' })
+    expect(sheet.props('open')).toBe(true)
+    expect(sheet.props('transaction')).toMatchObject({ id: 'tx-1' })
+  })
+
+  it('refreshes the month detail after a transaction is deleted', async () => {
+    _mockDetail.value = makeDetail()
+    const wrapper = await mountPage()
+    await flushPromises()
+    const fetchMock = vi.mocked(fetchMonthDetail)
+    fetchMock.mockClear()
+
+    await wrapper.findComponent({ name: 'EditTransactionSheet' }).vm.$emit('deleted')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith('2025-12')
   })
 
   it('renders chart section when categoryBreakdown has items', async () => {

@@ -15,6 +15,7 @@ import CategoryPieChart from '@/components/charts/CategoryPieChart.vue'
 import MonthBudgetPerformance from '@/components/history/MonthBudgetPerformance.vue'
 import TransactionListItem from '@/components/transactions/TransactionListItem.vue'
 import TransactionFilters from '@/components/transactions/TransactionFilters.vue'
+import EditTransactionSheet from '@/components/transactions/EditTransactionSheet.vue'
 import { groupTransactionsByDate } from '@/utils/dateGrouping'
 
 // Extended transaction type with recurring metadata
@@ -58,6 +59,18 @@ const monthLabel = computed(() => formatMonthLabel(rawMonth))
 const detail = ref<MonthDetail | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+async function loadMonthDetail() {
+  isLoading.value = true
+  error.value = null
+  try {
+    detail.value = await fetchMonthDetail(rawMonth)
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Failed to load month detail.'
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // ── Category filter (from pie chart) ─────────────────────────────────────────
 
@@ -157,6 +170,27 @@ const filteredTransactions = computed<DisplayTransaction[]>(() => {
 
 const groupedTransactions = computed(() => groupTransactionsByDate(filteredTransactions.value))
 
+// ── Edit Transaction Sheet ────────────────────────────────────────────────────
+
+const showEditTransaction = ref(false)
+const editingTransaction = ref<Transaction | null>(null)
+
+function openEditTransaction(tx: Transaction) {
+  if ((tx as DisplayTransaction)._isRecurring) return
+  editingTransaction.value = tx
+  showEditTransaction.value = true
+}
+
+function onTransactionSaved() {
+  showEditTransaction.value = false
+  loadMonthDetail()
+}
+
+function onTransactionDeleted() {
+  showEditTransaction.value = false
+  loadMonthDetail()
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -166,9 +200,7 @@ onMounted(async () => {
   try {
     if (accountsStore.accounts.length === 0) await accountsStore.loadAccounts()
     if (categoriesStore.categories.length === 0) await categoriesStore.loadCategories()
-    detail.value = await fetchMonthDetail(rawMonth)
-  } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'Failed to load month detail.'
+    await loadMonthDetail()
   } finally {
     isLoading.value = false
   }
@@ -349,6 +381,8 @@ onMounted(async () => {
                   :transaction="tx"
                   :accounts="accountsStore.accounts"
                   :categories="categoriesStore.categories"
+                  @select="openEditTransaction"
+                  @delete="openEditTransaction"
                 />
                 <!-- Recurring badge -->
                 <span
@@ -363,5 +397,13 @@ onMounted(async () => {
         </template>
       </div>
     </template>
+
+    <EditTransactionSheet
+      :open="showEditTransaction"
+      :transaction="editingTransaction"
+      @close="showEditTransaction = false"
+      @saved="onTransactionSaved"
+      @deleted="onTransactionDeleted"
+    />
   </div>
 </template>
