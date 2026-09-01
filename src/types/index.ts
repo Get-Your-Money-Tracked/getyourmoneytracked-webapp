@@ -59,6 +59,7 @@ export interface Budget {
   spent: number
   remaining: number
   percentUsed: number
+  isRecurring?: boolean
 }
 
 export interface BudgetProgress {

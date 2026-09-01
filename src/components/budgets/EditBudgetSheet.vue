@@ -26,6 +26,7 @@ const toastStore = useToastStore()
 // ── Form state ────────────────────────────────────────────────
 const amountInput = ref<string>('')
 const nameInput = ref<string>('')
+const isRecurring = ref(false)
 const isUpdating = ref(false)
 const isDeleting = ref(false)
 const updateError = ref<string | null>(null)
@@ -46,7 +47,11 @@ const isNameChanged = computed(() =>
   props.budget !== null && nameInput.value !== props.budget.name,
 )
 
-const isFormValid = computed(() => parsedAmount.value > 0 && (isAmountChanged.value || isNameChanged.value))
+const isRecurringChanged = computed(() =>
+  props.budget !== null && isRecurring.value !== (props.budget.isRecurring ?? false),
+)
+
+const isFormValid = computed(() => parsedAmount.value > 0 && (isAmountChanged.value || isNameChanged.value || isRecurringChanged.value))
 
 const isOverBudgetWarning = computed(() =>
   props.budget !== null && parsedAmount.value > 0 && parsedAmount.value < props.budget.spent,
@@ -81,6 +86,7 @@ watch(
     if (isOpen && props.budget) {
       amountInput.value = props.budget.amount.toFixed(2)
       nameInput.value = props.budget.name
+      isRecurring.value = props.budget.isRecurring ?? false
       isUpdating.value = false
       isDeleting.value = false
       updateError.value = null
@@ -107,10 +113,12 @@ async function handleUpdate() {
   isUpdating.value = true
   updateError.value = null
   try {
-    await budgetsStore.updateBudget(props.budget.id, {
+    const update: { amount: number; name?: string; recurring?: boolean } = {
       amount: parsedAmount.value,
       name: isNameChanged.value ? nameInput.value : undefined,
-    })
+    }
+    if (isRecurringChanged.value) update.recurring = isRecurring.value
+    await budgetsStore.updateBudget(props.budget.id, update)
     emit('saved')
     emit('close')
   } catch (e: unknown) {
@@ -146,12 +154,13 @@ async function confirmDelete() {
       {
         label: 'Undo',
         callback: () => {
-          budgetsStore.createBudget({
-            categoryId: snapshot.category.id,
-            amount: snapshot.amount,
-            month: snapshot.month,
-            name: snapshot.name || undefined,
-          }).catch(() => {/* undo failed silently */})
+            budgetsStore.createBudget({
+              categoryId: snapshot.category.id,
+              amount: snapshot.amount,
+              month: snapshot.month,
+              name: snapshot.name || undefined,
+              recurring: snapshot.isRecurring,
+            }).catch(() => {/* undo failed silently */})
         },
       },
     )
@@ -254,6 +263,15 @@ async function confirmDelete() {
       </div>
 
       <!-- Current spending (read-only info) -->
+	  <label class="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface-muted p-4">
+	    <input v-model="isRecurring" type="checkbox" class="mt-1 h-4 w-4 accent-primary" data-testid="edit-recurring-budget-checkbox" />
+	    <span>
+	      <span class="text-body block font-medium text-text-primary">Repeat every month</span>
+	      <span class="text-caption block text-text-secondary">Changes apply from this budget's month onward.</span>
+	    </span>
+	  </label>
+
+	  <!-- Current spending (read-only info) -->
       <div class="mb-4">
         <label class="text-caption mb-1 block font-medium text-text-secondary">Current Spending</label>
         <div class="rounded-xl bg-surface-muted p-3" data-testid="current-spending">

@@ -11,6 +11,7 @@ function parseBudgetMoney(raw: Record<string, unknown>): Budget {
     amount: parseMoney(raw.amount),
     spent: parseMoney(raw.spent),
     remaining: parseMoney(raw.remaining),
+    isRecurring: Boolean(raw.isRecurring),
   } as Budget
 }
 
@@ -26,6 +27,7 @@ const BUDGETS_QUERY = `
       spent
       remaining
       percentUsed
+      isRecurring
       category {
         id
         name
@@ -51,6 +53,7 @@ const CREATE_BUDGET_MUTATION = `
       spent
       remaining
       percentUsed
+      isRecurring
       category {
         id
         name
@@ -74,6 +77,7 @@ const UPDATE_BUDGET_MUTATION = `
       spent
       remaining
       percentUsed
+      isRecurring
       category {
         id
         name
@@ -100,11 +104,13 @@ export interface CreateBudgetInput {
   amount: number
   month?: string | null
   name?: string | null
+  recurring?: boolean
 }
 
 export interface UpdateBudgetInput {
   amount: number
   name?: string | null
+  recurring?: boolean | null
 }
 
 // ── Call functions ────────────────────────────────────────────────────────────
@@ -135,6 +141,7 @@ export async function callCreateBudget(input: CreateBudgetInput): Promise<Budget
 export async function callUpdateBudget(id: string, input: UpdateBudgetInput): Promise<Budget> {
   const gqlInput: Record<string, unknown> = { amount: toMoney(input.amount) }
   if (input.name !== undefined) gqlInput.name = input.name
+	if (input.recurring !== undefined) gqlInput.recurring = input.recurring
   const result = await urqlClient.mutation(UPDATE_BUDGET_MUTATION, { id, input: gqlInput }).toPromise()
   if (result.error) throw new Error(result.error.message ?? 'Failed to update budget.')
   if (!result.data?.updateBudget) throw new Error('No data returned from updateBudget.')

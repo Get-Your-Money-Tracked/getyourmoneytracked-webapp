@@ -26,6 +26,7 @@ const currencySymbol = computed(() => getCurrencySymbol(props.currency))
 const selectedCategoryId = ref<string>('')
 const budgetName = ref<string>('')
 const amountInput = ref<string>('')
+const isRecurring = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
@@ -68,6 +69,7 @@ watch(
       selectedCategoryId.value = ''
       budgetName.value = ''
       amountInput.value = ''
+      isRecurring.value = false
       isSubmitting.value = false
       submitError.value = null
       amountError.value = null
@@ -87,6 +89,7 @@ async function handleSubmit() {
       categoryId: selectedCategoryId.value,
       amount: parsedAmount.value,
       name: budgetName.value || undefined,
+      ...(isRecurring.value ? { recurring: true } : {}),
     })
     emit('created')
     emit('close')
@@ -193,6 +196,15 @@ async function handleSubmit() {
       </div>
 
       <!-- Submit error -->
+	  <label class="mb-6 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface-muted p-4">
+	    <input v-model="isRecurring" type="checkbox" class="mt-1 h-4 w-4 accent-primary" data-testid="recurring-budget-checkbox" />
+	    <span>
+	      <span class="text-body block font-medium text-text-primary">Repeat every month</span>
+	      <span class="text-caption block text-text-secondary">Use this limit from this month onward.</span>
+	    </span>
+	  </label>
+
+	  <!-- Submit error -->
       <p v-if="submitError" class="text-caption mb-3 text-danger" role="alert" data-testid="submit-error">
         {{ submitError }}
       </p>
